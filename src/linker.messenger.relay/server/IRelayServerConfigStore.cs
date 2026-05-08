@@ -24,7 +24,7 @@ namespace linker.messenger.relay.server
 
         public string Host { get; set; } = string.Empty;
 
-        public TunnelProtocolType Protocol { get; set; } = TunnelProtocolType.Tcp;
+        public TunnelProtocolType Protocol { get; set; } = TunnelProtocolType.All;
         public int Connections { get; set; }
         public int Bandwidth { get; set; }
         public int DataEachMonth { get; set; }

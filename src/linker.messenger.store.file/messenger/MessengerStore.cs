@@ -32,26 +32,44 @@ namespace linker.messenger.store.file.messenger
             string publicPem = new StreamReader(streamPublic).ReadToEnd();
             string privatePem = new StreamReader(streamPrivate).ReadToEnd();
 
-            // BouncyCastle ile PFX oluştur — NCrypt'e hiç dokunmaz
             byte[] pfx = BuildPfxWithBouncyCastle(publicPem, privatePem, "temp");
 
-            certificate = new X509Certificate2(
-                pfx,
-                "temp",
-                X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable
-            );
+            certificate = LoadCertificate(pfx, "temp");
             certificateExport = certificate;
+        }
+
+        private static X509Certificate2 LoadCertificate(byte[] pfx, string password)
+        {
+            X509KeyStorageFlags flags;
+
+            if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS())
+            {
+                // Android/iOS: PersistKeySet desteklenmiyor, EphemeralKeySet zorunlu
+                flags = X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable;
+            }
+            else if (OperatingSystem.IsWindows() || OperatingSystem.IsMacOS())
+            {
+                // Windows/macOS: TLS server için PersistKeySet şart
+                flags = X509KeyStorageFlags.MachineKeySet |
+                        X509KeyStorageFlags.PersistKeySet |
+                        X509KeyStorageFlags.Exportable;
+            }
+            else
+            {
+                // Linux ve diğerleri
+                flags = X509KeyStorageFlags.EphemeralKeySet | X509KeyStorageFlags.Exportable;
+            }
+
+            return new X509Certificate2(pfx, password, flags);
         }
 
         private static byte[] BuildPfxWithBouncyCastle(string certPem, string keyPem, string password)
         {
-            // Cert parse
             var certParser = new X509CertificateParser();
             var bcCert = certParser.ReadCertificate(
                 System.Text.Encoding.UTF8.GetBytes(certPem)
             );
 
-            // Private key parse
             AsymmetricKeyParameter privateKey;
             using (var keyReader = new StringReader(keyPem))
             {
@@ -65,12 +83,9 @@ namespace linker.messenger.store.file.messenger
                 };
             }
 
-            // Public key'i direkt cert'ten al — GetEncoded yok
             AsymmetricKeyParameter publicKey = bcCert.GetPublicKey();
-
             var keyPair = new AsymmetricCipherKeyPair(publicKey, privateKey);
 
-            // PKCS12 store oluştur
             var store = new Pkcs12StoreBuilder().Build();
             var certEntry = new X509CertificateEntry(bcCert);
             store.SetCertificateEntry("cert", certEntry);

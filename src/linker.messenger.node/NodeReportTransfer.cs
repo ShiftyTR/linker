@@ -404,12 +404,22 @@ namespace linker.messenger.node
                     Host = $"{host}:{nodeConfigStore.ServicePort}",
                     Name = Config.Name
                 };
-                string shareKey = Convert.ToBase64String(crypto.Encode(serializer.Serialize(shareKeyInfo)));
-                nodeConfigStore.SetShareKey(shareKey);
+                string shareKey = Config.ShareKey;
+                if (string.IsNullOrEmpty(Config.ShareKey)){
+                    shareKey = Convert.ToBase64String(crypto.Encode(serializer.Serialize(shareKeyInfo)));
+                    nodeConfigStore.SetShareKey(shareKey);
+                }
+
 
                 shareKeyInfo.MasterKey = Config.MasterKey;
-                string shareKeyManager = Convert.ToBase64String(crypto.Encode(serializer.Serialize(shareKeyInfo)));
-                nodeConfigStore.SetShareKeyManager(shareKeyManager);
+                string shareKeyManager = Config.ShareKeyManager;
+                if (string.IsNullOrEmpty(Config.ShareKeyManager))
+                {
+                    shareKeyManager = Convert.ToBase64String(crypto.Encode(serializer.Serialize(shareKeyInfo)));
+                    nodeConfigStore.SetShareKeyManager(shareKeyManager);
+                }
+                
+                    
                 nodeConfigStore.Confirm();
 
                 host = $"{IPAddress.Loopback}:{nodeConfigStore.ServicePort}";
@@ -425,6 +435,7 @@ namespace linker.messenger.node
                         ShareKey = shareKeyManager,
                         MasterKey = Config.MasterKey,
                         Manageable = true,
+                        
                     }).ConfigureAwait(false);
                 }
 
