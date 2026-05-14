@@ -3,12 +3,17 @@ const langs = [
     {
         label: '简体中文',
         value: 'zh-CN',
-        ctx: require.context('../', true,/zh-cn\.json$/)
+        ctx: require.context('../', true, /zh-cn\.json$/)
+    },
+    {
+        label: '繁体中文',
+        value: 'zh-TW',
+        ctx: require.context('../', true, /zh-tw\.json$/)
     },
     {
         label: 'English',
         value: 'en-US',
-        ctx: require.context('../', true,/en-us\.json$/)
+        ctx: require.context('../', true, /en-us\.json$/)
     }
 ]
 

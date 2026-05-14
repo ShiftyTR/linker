@@ -1,0 +1,10 @@
+{
+    "head.home": "Главная",
+    "head.server": "Сервер",
+    "head.protocol": "Туннель",
+    "head.action": "Проверка",
+    "head.firewall": "брандмауэр",
+    "head.wakeup": "проснуться",
+    "head.logger": "Журнал",
+    "head.refresh": "Обновить"
+}
