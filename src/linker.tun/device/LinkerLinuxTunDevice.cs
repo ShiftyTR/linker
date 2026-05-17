@@ -154,9 +154,13 @@ namespace linker.tun.device
 
                 CommandHelper.Linux(string.Empty, new string[] {
                     $"iptables -t mangle -A INPUT -i {Name} -p tcp --syn -j TCPMSS {_value}",
+                    $"iptables -t mangle -A INPUT -i {Name} -p tcp --tcp-flags SYN SYN -j TCPMSS {_value}",
                     $"iptables -t mangle -A OUTPUT -o {Name} -p tcp --syn -j TCPMSS {_value}",
+                    $"iptables -t mangle -A OUTPUT -o {Name} -p tcp --tcp-flags SYN SYN -j TCPMSS {_value}",
                     $"iptables -t mangle -A FORWARD -i {Name} -o {interfaceLinux} -p tcp --syn -j TCPMSS {_value}",
+                    $"iptables -t mangle -A FORWARD -i {Name} -o {interfaceLinux} -p tcp --tcp-flags SYN SYN -j TCPMSS {_value}",
                     $"iptables -t mangle -A FORWARD -i {interfaceLinux} -o {Name} -p tcp --syn -j TCPMSS {_value}",
+                    $"iptables -t mangle -A FORWARD -i {interfaceLinux} -o {Name} -p tcp --tcp-flags SYN SYN -j TCPMSS {_value}",
                 });
 
             }
@@ -356,10 +360,10 @@ namespace linker.tun.device
             return output;
         }
 
-        public async Task<bool> CheckAvailable(bool order = false)
+        public  Task<bool> CheckAvailable(bool order = false)
         {
             string output = CommandHelper.Linux(string.Empty, new string[] { $"ip link show {Name}" });
-            return await Task.FromResult(output.Contains("state UP")).ConfigureAwait(false);
+            return  Task.FromResult(output.Contains("state UP"));
         }
     }
 }

@@ -104,9 +104,9 @@ namespace linker.messenger
         /// <param name="ep"></param>
         /// <param name="memory"></param>
         /// <returns></returns>
-        public async Task BeginReceiveServer(Socket socket, IPEndPoint ep, Memory<byte> memory)
+        public Task BeginReceiveServer(Socket socket, IPEndPoint ep, Memory<byte> memory)
         {
-            await Task.CompletedTask.ConfigureAwait(false);
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -114,9 +114,9 @@ namespace linker.messenger
         /// </summary>
         /// <param name="socket"></param>
         /// <returns></returns>
-        public async Task<IConnection> BeginReceiveClient(Socket socket)
+        public Task<IConnection> BeginReceiveClient(Socket socket)
         {
-            return await BeginReceiveClient(socket, false, 0, Helper.EmptyArray).ConfigureAwait(false);
+            return BeginReceiveClient(socket, false, 0, Helper.EmptyArray);
         }
         /// <summary>
         /// 以客户端模式接收数据
@@ -131,17 +131,21 @@ namespace linker.messenger
             buffer.Memory.Span[0] = flag;
             try
             {
+                LoggerHelper.Instance.Debug("BeginReceiveClient");
                 if (socket == null || socket.RemoteEndPoint == null)
                 {
+                    LoggerHelper.Instance.Error("socket or remote endpoint is null");
                     return null;
                 }
                 socket.KeepAlive();
                 if (sendFlag)
                 {
+                    LoggerHelper.Instance.Debug($"BeginReceiveClient send flag: {buffer.Memory.Slice(0, 1).Span[0]}");
                     await socket.SendAsync(buffer.Memory.Slice(0, 1)).ConfigureAwait(false);
                 }
                 if (data.Length > 0)
                 {
+                    LoggerHelper.Instance.Debug($"BeginReceiveClient send data {data.Length} bytes");
                     await socket.SendAsync(data).ConfigureAwait(false);
                 }
 
@@ -150,6 +154,7 @@ namespace linker.messenger
                 SslStream sslStream = new SslStream(networkStream, true, ValidateServerCertificate, null);
                 try
                 {
+                    LoggerHelper.Instance.Debug($"BeginReceiveClient AuthenticateAsClientAsync");
                     await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
                     {
                         EnabledSslProtocols = SslProtocols.Tls13 | SslProtocols.Tls12,
@@ -163,8 +168,8 @@ namespace linker.messenger
                 }
                 catch (Exception ex)
                 {
-                    if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
-                        LoggerHelper.Instance.Error(ex);
+                    //if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
+                    LoggerHelper.Instance.Error(ex);
                     socket.SafeClose();
                     sslStream.Dispose();
                     networkStream.Dispose();
@@ -174,8 +179,8 @@ namespace linker.messenger
             }
             catch (Exception ex)
             {
-                if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
-                    LoggerHelper.Instance.Error(ex);
+                // if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
+                LoggerHelper.Instance.Error(ex);
 
                 socket.SafeClose();
             }

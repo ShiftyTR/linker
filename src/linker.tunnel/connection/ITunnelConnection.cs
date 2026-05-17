@@ -174,11 +174,6 @@ namespace linker.tunnel.connection
         public LastTicksManager LastTicks { get; }
 
         /// <summary>
-        /// 缓冲区
-        /// </summary>
-        public byte[] PacketBuffer { get; set; }
-
-        /// <summary>
         /// 发送数据
         /// </summary>
         /// <param name="data"></param>
