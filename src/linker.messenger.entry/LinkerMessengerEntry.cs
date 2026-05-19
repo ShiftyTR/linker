@@ -156,82 +156,91 @@ namespace linker.messenger.entry
         /// <param name="modules">排除哪些模块，默认无</param>
         public static void Setup(ExcludeModule modules = ExcludeModule.None, JsonDocument config = null)
         {
-            if (setuped.StartOperation() == false) return;
-
-            if ((modules & ExcludeModule.Logger) != ExcludeModule.Logger)
-                serviceProvider.UseLogger();
-
-            ICommonStore commonStore = serviceProvider.GetService<ICommonStore>();
-
-            serviceProvider.UseMessenger();
-
-            if ((modules & ExcludeModule.StoreFile) != ExcludeModule.StoreFile)
-                serviceProvider.UseStoreFile(config);
-            if ((modules & ExcludeModule.SerializerMemoryPack) != ExcludeModule.SerializerMemoryPack)
-                serviceProvider.UseSerializerMemoryPack();
-
-            if ((commonStore.Modes & CommonModes.Server) == CommonModes.Server)
+            try
             {
-                if ((modules & ExcludeModule.Updater) != ExcludeModule.Updater)
-                    serviceProvider.UseUpdaterServer();
-                if ((modules & ExcludeModule.Action) != ExcludeModule.Action)
-                    serviceProvider.UseActionServer();
-                if ((modules & ExcludeModule.Forward) != ExcludeModule.Forward)
-                    serviceProvider.UseForwardServer();
-                if ((modules & ExcludeModule.SForward) != ExcludeModule.SForward)
-                    serviceProvider.UseSForwardServer();
-                if ((modules & ExcludeModule.Socks5) != ExcludeModule.Socks5)
-                    serviceProvider.UseSocks5Server();
-                if ((modules & ExcludeModule.Tuntap) != ExcludeModule.Tuntap)
-                    serviceProvider.UseTuntapServer();
-                if ((modules & ExcludeModule.Firewall) != ExcludeModule.Firewall)
-                    serviceProvider.UseFirewallServer();
-                if ((modules & ExcludeModule.Wakeup) != ExcludeModule.Wakeup)
-                    serviceProvider.UseWakeupServer();
+                if (setuped.StartOperation() == false) return;
 
-                serviceProvider.UseAccessServer().UseDecenterServer().UsePcpServer()
-                    .UseRelayServer().UseWhiteListServer()
-                 .UseSignInServer().UseSyncServer().UseTunnelServer().UseFlowServer();
-
-                serviceProvider.UseListen();
-
-                serviceProvider.UsePlanServer();
-            }
-
-            if ((commonStore.Modes & CommonModes.Client) == CommonModes.Client)
-            {
-                if ((modules & ExcludeModule.Updater) != ExcludeModule.Updater)
-                    serviceProvider.UseUpdaterClient();
                 if ((modules & ExcludeModule.Logger) != ExcludeModule.Logger)
-                    serviceProvider.UseLoggerClient();
-                if ((modules & ExcludeModule.Api) != ExcludeModule.Api)
-                    serviceProvider.UseApiClient();
-                if ((modules & ExcludeModule.Action) != ExcludeModule.Action)
-                    serviceProvider.UseActionClient();
-                if ((modules & ExcludeModule.Forward) != ExcludeModule.Forward)
-                    serviceProvider.UseForwardClient();
-                if ((modules & ExcludeModule.SForward) != ExcludeModule.SForward)
-                    serviceProvider.UseSForwardClient();
-                if ((modules & ExcludeModule.Socks5) != ExcludeModule.Socks5)
-                    serviceProvider.UseSocks5Client();
-                if ((modules & ExcludeModule.Tuntap) != ExcludeModule.Tuntap)
-                    serviceProvider.UseTuntapClient(config);
-                if ((modules & ExcludeModule.Firewall) != ExcludeModule.Firewall)
-                    serviceProvider.UseFirewallClient();
-                if ((modules & ExcludeModule.Wakeup) != ExcludeModule.Wakeup)
-                    serviceProvider.UseWakeupClient();
+                    serviceProvider.UseLogger();
+
+                ICommonStore commonStore = serviceProvider.GetService<ICommonStore>();
+
+                serviceProvider.UseMessenger();
+
+                if ((modules & ExcludeModule.StoreFile) != ExcludeModule.StoreFile)
+                    serviceProvider.UseStoreFile(config);
+                if ((modules & ExcludeModule.SerializerMemoryPack) != ExcludeModule.SerializerMemoryPack)
+                    serviceProvider.UseSerializerMemoryPack();
+
+                if ((commonStore.Modes & CommonModes.Server) == CommonModes.Server)
+                {
+                    if ((modules & ExcludeModule.Updater) != ExcludeModule.Updater)
+                        serviceProvider.UseUpdaterServer();
+                    if ((modules & ExcludeModule.Action) != ExcludeModule.Action)
+                        serviceProvider.UseActionServer();
+                    if ((modules & ExcludeModule.Forward) != ExcludeModule.Forward)
+                        serviceProvider.UseForwardServer();
+                    if ((modules & ExcludeModule.SForward) != ExcludeModule.SForward)
+                        serviceProvider.UseSForwardServer();
+                    if ((modules & ExcludeModule.Socks5) != ExcludeModule.Socks5)
+                        serviceProvider.UseSocks5Server();
+                    if ((modules & ExcludeModule.Tuntap) != ExcludeModule.Tuntap)
+                        serviceProvider.UseTuntapServer();
+                    if ((modules & ExcludeModule.Firewall) != ExcludeModule.Firewall)
+                        serviceProvider.UseFirewallServer();
+                    if ((modules & ExcludeModule.Wakeup) != ExcludeModule.Wakeup)
+                        serviceProvider.UseWakeupServer();
+
+                    serviceProvider.UseAccessServer().UseDecenterServer().UsePcpServer()
+                        .UseRelayServer().UseWhiteListServer()
+                     .UseSignInServer().UseSyncServer().UseTunnelServer().UseFlowServer();
+
+                    serviceProvider.UseListen();
+
+                    serviceProvider.UsePlanServer();
+                }
+
+                if ((commonStore.Modes & CommonModes.Client) == CommonModes.Client)
+                {
+                    if ((modules & ExcludeModule.Updater) != ExcludeModule.Updater)
+                        serviceProvider.UseUpdaterClient();
+                    if ((modules & ExcludeModule.Logger) != ExcludeModule.Logger)
+                        serviceProvider.UseLoggerClient();
+                    if ((modules & ExcludeModule.Api) != ExcludeModule.Api)
+                        serviceProvider.UseApiClient();
+                    if ((modules & ExcludeModule.Action) != ExcludeModule.Action)
+                        serviceProvider.UseActionClient();
+                    if ((modules & ExcludeModule.Forward) != ExcludeModule.Forward)
+                        serviceProvider.UseForwardClient();
+                    if ((modules & ExcludeModule.SForward) != ExcludeModule.SForward)
+                        serviceProvider.UseSForwardClient();
+                    if ((modules & ExcludeModule.Socks5) != ExcludeModule.Socks5)
+                        serviceProvider.UseSocks5Client();
+                    if ((modules & ExcludeModule.Tuntap) != ExcludeModule.Tuntap)
+                        serviceProvider.UseTuntapClient(config);
+                    if ((modules & ExcludeModule.Firewall) != ExcludeModule.Firewall)
+                        serviceProvider.UseFirewallClient();
+                    if ((modules & ExcludeModule.Wakeup) != ExcludeModule.Wakeup)
+                        serviceProvider.UseWakeupClient();
 
 
-                serviceProvider.UseExRoute().UseAccessClient().UseDecenterClient().UsePcpClient()
-                    .UseRelayClient().UseWhiteListClient()
-                    .UseSyncClient().UseTunnelClient().UseFlowClient();
+                    serviceProvider.UseExRoute().UseAccessClient().UseDecenterClient().UsePcpClient()
+                        .UseRelayClient().UseWhiteListClient()
+                        .UseSyncClient().UseTunnelClient().UseFlowClient();
 
-                serviceProvider.UseSignInClient();
+                    serviceProvider.UseSignInClient();
 
-                serviceProvider.UsePlanClient();
+                    serviceProvider.UsePlanClient();
 
-                serviceProvider.UseChannelClient();
+                    serviceProvider.UseChannelClient();
+                }
             }
+            catch (Exception ex)
+            {
+                var a = ex;
+            }
+            
+            
         }
 
     }

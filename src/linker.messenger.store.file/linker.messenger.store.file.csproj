@@ -36,10 +36,12 @@
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 	<ItemGroup>
+	  <None Remove="cert.pfx" />
 	  <None Remove="privatekey.pem" />
 	  <None Remove="publickey.pem" />
 	</ItemGroup>
 	<ItemGroup>
+	  <EmbeddedResource Include="cert.pfx" />
 	  <EmbeddedResource Include="privatekey.pem" />
 	  <EmbeddedResource Include="publickey.pem" />
 	</ItemGroup>
