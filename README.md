@@ -71,11 +71,20 @@
 
 ### 5、向前纠错
 
-以下是 UDP隧道/UDP隧道+FEC 的效果对比，其中一端使用iptables模拟丢包，双向都是10%
+以下是UDP隧道/UDP隧道+FEC的效果对比，其中一端对UDP打洞端口模拟双向丢包10%
 
 ```
+//iptables
 iptables -A INPUT -p udp --dport 18183 -m statistic --mode random --probability 0.1 -j DROP
 iptables -A OUTPUT -p udp --sport 18183 -m statistic --mode random --probability 0.1 -j DROP
+//nftables
+nft flush table inet linkerdrop
+nft delete table inet linkerdrop
+nft add table inet linkerdrop
+nft add chain inet linkerdrop input { type filter hook input priority -10 \; }
+nft add chain inet linkerdrop output { type filter hook output priority -10 \; }
+nft add rule inet linkerdrop input udp dport 18183 numgen random mod 100 lt 10 drop
+nft add rule inet linkerdrop output udp sport 18183 numgen random mod 100 lt 10 drop
 ```
 
 <p><img src="./readme/fec.jpg"></p> 

@@ -44,7 +44,7 @@ namespace linker.messenger.listen
             while (true)
             {
                 var acceptTask = await socket.AcceptAsync(cancellationTokenSource.Token).ConfigureAwait(false);
-                if (acceptTask!= null && acceptTask.RemoteEndPoint != null)
+                if (acceptTask != null && acceptTask.RemoteEndPoint != null)
                 {
                     _ = BeginReceive(acceptTask).ConfigureAwait(false);
                 }
@@ -93,7 +93,7 @@ namespace linker.messenger.listen
 
         private async Task BeginReceive(Socket socket)
         {
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(32);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(1024);
             using CancellationTokenSource cts = new CancellationTokenSource(5000);
             try
             {
@@ -114,7 +114,7 @@ namespace linker.messenger.listen
                 {
                     LoggerHelper.Instance.Debug($"tcp server got {type} from {socket.RemoteEndPoint}");
                 }
-                if (countryTransfer.Test(type, (socket.RemoteEndPoint as IPEndPoint).Address) == false)
+                if (countryTransfer.Test(type, (socket.RemoteEndPoint as IPEndPoint).Address.MapToIPv4()) == false)
                 {
                     cts.Cancel();
                     socket.SafeClose();

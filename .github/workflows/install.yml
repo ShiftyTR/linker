@@ -5,27 +5,72 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: setup node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: '16'
       - name: setup dotnet
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v4
         env:
           GITHUB_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
         with:
           dotnet-version: 8.0.x
       - name: setup install
-        run: sudo apt-get install binutils tar gzip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binutils tar gzip curl jq
+      - name: setup apk mkpkg
+        run: >
+          cat >/tmp/openwrt-apk <<'EOF'
+
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:$PWD" -w "$PWD"
+          alpine:edge apk "$@"
+
+          EOF
+
+          chmod +x /tmp/openwrt-apk
+
+          /tmp/openwrt-apk --version
+
+          /tmp/openwrt-apk mkpkg --help >/tmp/apk-mkpkg-help.txt 2>&1 || true
+
+          grep -q 'apk mkpkg creates' /tmp/apk-mkpkg-help.txt
       - name: sed shell
-        run: >-
-          sed -i 's/\r$//' shells/publish-ipk.sh ; sed -i 's/\r$//'
-          shells/publish-fpk.sh
+        run: >
+          for f in shells/publish-ipk.sh shells/publish-fpk.sh publish-ipk.sh;
+          do
+            if [ -f "$f" ]; then
+              sed -i 's/\r$//' "$f"
+            fi
+          done
       - name: chmod shell
-        run: chmod +x shells/publish-ipk.sh ; chmod +x shells/publish-fpk.sh
+        run: >
+          for f in shells/publish-ipk.sh shells/publish-fpk.sh publish-ipk.sh;
+          do
+            if [ -f "$f" ]; then
+              chmod +x "$f"
+            fi
+          done
       - name: publish projects
-        run: ./shells/publish-ipk.sh ; ./shells/publish-fpk.sh
+        run: |
+          set -e
+          if [ -x ./publish-ipk.sh ]; then
+            APK_CMD=/tmp/openwrt-apk ./publish-ipk.sh
+          elif [ -x ./shells/publish-ipk.sh ]; then
+            APK_CMD=/tmp/openwrt-apk ./shells/publish-ipk.sh
+          else
+            echo "publish-ipk.sh not found" >&2
+            exit 1
+          fi
+
+          if [ -x ./shells/publish-fpk.sh ]; then
+            ./shells/publish-fpk.sh
+          fi
       - name: get latest release
         id: get_release
         run: |
@@ -35,8 +80,8 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/releases/latest")
           upload_url=$(echo "$response" | jq -r '.upload_url')
           echo "upload_url=$upload_url" >> $GITHUB_OUTPUT
-      - name: upload-x64-oss
-        id: upload-x64-oss
+      - name: upload-x64-ipk-oss
+        id: upload-x64-ipk-oss
         uses: tvrcgo/oss-action@v0.1.1
         with:
           region: oss-cn-shenzhen
@@ -45,8 +90,8 @@ jobs:
           bucket: ide-qbcode
           asset-path: ./public/publish-ipk/x64/linker-openwrt-x64.ipk
           target-path: /downloads/linker/v1.9.99/linker-openwrt-x64.ipk
-      - name: upload-x64
-        id: upload-x64
+      - name: upload-x64-ipk
+        id: upload-x64-ipk
         uses: actions/upload-release-asset@master
         env:
           GITHUB_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
@@ -55,8 +100,28 @@ jobs:
           asset_path: ./public/publish-ipk/x64/linker-openwrt-x64.ipk
           asset_name: linker-openwrt-x64.ipk
           asset_content_type: application/ipk
-      - name: upload-arm-oss
-        id: upload-arm-oss
+      - name: upload-x64-apk-oss
+        id: upload-x64-apk-oss
+        uses: tvrcgo/oss-action@v0.1.1
+        with:
+          region: oss-cn-shenzhen
+          key-id: ${{ secrets.ALIYUN_OSS_ID }}
+          key-secret: ${{ secrets.ALIYUN_OSS_SECRET }}
+          bucket: ide-qbcode
+          asset-path: ./public/publish-apk/x64/linker-openwrt-x64.apk
+          target-path: /downloads/linker/v1.9.99/linker-openwrt-x64.apk
+      - name: upload-x64-apk
+        id: upload-x64-apk
+        uses: actions/upload-release-asset@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./public/publish-apk/x64/linker-openwrt-x64.apk
+          asset_name: linker-openwrt-x64.apk
+          asset_content_type: application/apk
+      - name: upload-arm-ipk-oss
+        id: upload-arm-ipk-oss
         uses: tvrcgo/oss-action@v0.1.1
         with:
           region: oss-cn-shenzhen
@@ -65,8 +130,8 @@ jobs:
           bucket: ide-qbcode
           asset-path: ./public/publish-ipk/arm/linker-openwrt-arm.ipk
           target-path: /downloads/linker/v1.9.99/linker-openwrt-arm.ipk
-      - name: upload-arm
-        id: upload-arm
+      - name: upload-arm-ipk
+        id: upload-arm-ipk
         uses: actions/upload-release-asset@master
         env:
           GITHUB_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
@@ -75,8 +140,28 @@ jobs:
           asset_path: ./public/publish-ipk/arm/linker-openwrt-arm.ipk
           asset_name: linker-openwrt-arm.ipk
           asset_content_type: application/ipk
-      - name: upload-arm64-oss
-        id: upload-arm64-oss
+      - name: upload-arm-apk-oss
+        id: upload-arm-apk-oss
+        uses: tvrcgo/oss-action@v0.1.1
+        with:
+          region: oss-cn-shenzhen
+          key-id: ${{ secrets.ALIYUN_OSS_ID }}
+          key-secret: ${{ secrets.ALIYUN_OSS_SECRET }}
+          bucket: ide-qbcode
+          asset-path: ./public/publish-apk/arm/linker-openwrt-arm.apk
+          target-path: /downloads/linker/v1.9.99/linker-openwrt-arm.apk
+      - name: upload-arm-apk
+        id: upload-arm-apk
+        uses: actions/upload-release-asset@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./public/publish-apk/arm/linker-openwrt-arm.apk
+          asset_name: linker-openwrt-arm.apk
+          asset_content_type: application/apk
+      - name: upload-arm64-ipk-oss
+        id: upload-arm64-ipk-oss
         uses: tvrcgo/oss-action@v0.1.1
         with:
           region: oss-cn-shenzhen
@@ -85,8 +170,8 @@ jobs:
           bucket: ide-qbcode
           asset-path: ./public/publish-ipk/arm64/linker-openwrt-arm64.ipk
           target-path: /downloads/linker/v1.9.99/linker-openwrt-arm64.ipk
-      - name: upload-arm64
-        id: upload-arm64
+      - name: upload-arm64-ipk
+        id: upload-arm64-ipk
         uses: actions/upload-release-asset@master
         env:
           GITHUB_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
@@ -95,6 +180,26 @@ jobs:
           asset_path: ./public/publish-ipk/arm64/linker-openwrt-arm64.ipk
           asset_name: linker-openwrt-arm64.ipk
           asset_content_type: application/ipk
+      - name: upload-arm64-apk-oss
+        id: upload-arm64-apk-oss
+        uses: tvrcgo/oss-action@v0.1.1
+        with:
+          region: oss-cn-shenzhen
+          key-id: ${{ secrets.ALIYUN_OSS_ID }}
+          key-secret: ${{ secrets.ALIYUN_OSS_SECRET }}
+          bucket: ide-qbcode
+          asset-path: ./public/publish-apk/arm64/linker-openwrt-arm64.apk
+          target-path: /downloads/linker/v1.9.99/linker-openwrt-arm64.apk
+      - name: upload-arm64-apk
+        id: upload-arm64-apk
+        uses: actions/upload-release-asset@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          asset_path: ./public/publish-apk/arm64/linker-openwrt-arm64.apk
+          asset_name: linker-openwrt-arm64.apk
+          asset_content_type: application/apk
       - name: upload-docker-fpk-oss
         id: upload-docker-fpk-oss
         uses: tvrcgo/oss-action@v0.1.1
