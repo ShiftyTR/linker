@@ -66,7 +66,7 @@ namespace linker.messenger.store.file.firewall
             }
             else
             {
-                return liteCollection.UpdateMany(p => new FirewallRuleInfo
+                bool updated = liteCollection.UpdateMany(p => new FirewallRuleInfo
                 {
                     SrcId = rule.SrcId,
                     SrcName = rule.SrcName,
@@ -79,6 +79,11 @@ namespace linker.messenger.store.file.firewall
                     Disabled = rule.Disabled,
                     Remark = rule.Remark
                 }, c => c.Id == rule.Id) > 0;
+                if (!updated)
+                {
+                    return liteCollection.Insert(rule) != null;
+                }
+                return true;
             }
         }
         public bool Add(List<FirewallRuleInfo> rules)
@@ -92,7 +97,7 @@ namespace linker.messenger.store.file.firewall
                 }
                 else
                 {
-                    liteCollection.UpdateMany(p => new FirewallRuleInfo
+                    bool updated = liteCollection.UpdateMany(p => new FirewallRuleInfo
                     {
                         SrcId = rule.SrcId,
                         SrcName = rule.SrcName,
@@ -104,7 +109,11 @@ namespace linker.messenger.store.file.firewall
                         OrderBy = rule.OrderBy,
                         Disabled = rule.Disabled,
                         Remark = rule.Remark
-                    }, c => c.Id == rule.Id);
+                    }, c => c.Id == rule.Id) > 0;
+                    if (!updated)
+                    {
+                        liteCollection.Insert(rule);
+                    }
                 }
             }
             return true;
