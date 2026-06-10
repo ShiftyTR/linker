@@ -29,16 +29,25 @@ namespace linker.messenger.listen
             }
             if (socket == null)
             {
-                IPEndPoint localEndPoint = ipv6 ? new IPEndPoint(IPAddress.IPv6Any, port) : new IPEndPoint(IPAddress.Any, port);
-                _ = BindTcp(localEndPoint);
-                _ = BindUdp(localEndPoint);
+                _ = BindTcp(port);
+                _ = BindUdp(port);
             }
         }
-        private async Task BindTcp(IPEndPoint localEndPoint)
+        private async Task BindTcp(int port)
         {
-            socket = new Socket(localEndPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            socket.IPv6Only(localEndPoint.AddressFamily, false);
-            socket.Bind(localEndPoint);
+            try
+            {
+                socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                socket.IPv6Only(AddressFamily.InterNetworkV6, false);
+                socket.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
+            }
+            catch (SocketException)
+            {
+                socket?.Close();
+                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                socket.Bind(new IPEndPoint(IPAddress.Any, port));
+                LoggerHelper.Instance.Warning($"tcp server IPv6 unavailable, falling back to IPv4 on port {port}");
+            }
             socket.Listen(int.MaxValue);
 
             while (true)
@@ -50,13 +59,26 @@ namespace linker.messenger.listen
                 }
             }
         }
-        private async Task BindUdp(IPEndPoint localEndPoint)
+        private async Task BindUdp(int port)
         {
-            socketUdp = new Socket(localEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            socketUdp.IPv6Only(localEndPoint.AddressFamily, false);
-            socketUdp.Bind(localEndPoint);
-            socketUdp.WindowsUdpBug();
-            IPEndPoint endPoint = localEndPoint.AddressFamily == AddressFamily.InterNetworkV6 ? new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort) : new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
+            bool dualStack = false;
+            try
+            {
+                socketUdp = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                socketUdp.IPv6Only(AddressFamily.InterNetworkV6, false);
+                socketUdp.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
+                socketUdp.WindowsUdpBug();
+                dualStack = true;
+            }
+            catch (SocketException)
+            {
+                socketUdp?.Close();
+                socketUdp = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socketUdp.Bind(new IPEndPoint(IPAddress.Any, port));
+                socketUdp.WindowsUdpBug();
+                LoggerHelper.Instance.Warning($"udp server IPv6 unavailable, falling back to IPv4 on port {port}");
+            }
+            IPEndPoint endPoint = dualStack ? new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort) : new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
             using IMemoryOwner<byte> buffer = MemoryPool<byte>.Shared.Rent(65535);
             while (true)
             {

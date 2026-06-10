@@ -128,22 +128,34 @@ namespace linker.messenger.channel
                 return connection;
             }
 
-            //开始失败，说明在操作中
+            //开始失败，说明在操作中 — wait for relay instead of returning null
             if (operatingMultipleManager.StartOperation($"{machineId}@{TransactionId}") == false)
             {
+                // Another coroutine is already doing RelayAndP2P; wait for relay to come up.
                 connection = await tunnelTransfer.ConnectAsync(machineId, TransactionId, denyProtocols, flag: "relay", tunnelTypes: [TunnelType.Relay]).ConfigureAwait(false);
+                if (connection != null)
+                {
+                    channelConnectionCaching.Add(connection);
+                }
                 return connection;
             }
-            _ = RelayAndP2P(machineId, denyProtocols).ContinueWith((result) =>
+
+            // First caller: establish relay synchronously so packets are not dropped,
+            // then upgrade to P2P in the background.
+            try
+            {
+                connection = await RelayAndP2P(machineId, denyProtocols).ConfigureAwait(false);
+                if (connection != null)
+                {
+                    channelConnectionCaching.Add(connection);
+                }
+            }
+            finally
             {
                 operatingMultipleManager.StopOperation($"{machineId}@{TransactionId}");
-                if (result.Result != null)
-                {
-                    channelConnectionCaching.Add(result.Result);
-                }
-            }).ConfigureAwait(false);
+            }
 
-            return null;
+            return connection;
         }
         private async Task<ITunnelConnection> RelayAndP2P(string machineId, TunnelProtocolType denyProtocols)
         {
@@ -160,7 +172,7 @@ namespace linker.messenger.channel
             ITunnelConnection connection = await tunnelTransfer.ConnectAsync(machineId, TransactionId, denyProtocols).ConfigureAwait(false);
             if (connection != null && connection.Type != TunnelType.P2P)
             {
-                //后台打洞
+                //后台打洞 — start immediately (delay=0), try up to 5 times
                 tunnelTransfer.StartBackground(machineId, TransactionId, denyProtocols, () =>
                 {
                     return channelConnectionCaching.TryGetValue(machineId, TransactionId, out ITunnelConnection _connection)
@@ -171,7 +183,7 @@ namespace linker.messenger.channel
                 {
                     return Task.CompletedTask;
 
-                }, 3, 10000);
+                }, 5, 0);
             }
 
             return connection;
