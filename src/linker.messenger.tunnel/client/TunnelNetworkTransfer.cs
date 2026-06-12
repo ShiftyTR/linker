@@ -28,6 +28,15 @@ namespace linker.messenger.tunnel.client
 
         private readonly OperatingMultipleManager operatingManager = new OperatingMultipleManager();
 
+        //NAT 类型探测使用的 STUN 服务器，优先 Google，其余作为备用
+        private static readonly (string Host, int Port)[] stunServers = new[]
+        {
+            ("stun.l.google.com", 19302),
+            ("stun1.l.google.com", 19302),
+            ("stun2.l.google.com", 19302),
+            ("stun.hot-chilli.net", 3478),
+        };
+
 
         public TunnelNetworkTransfer(ISignInClientStore signInClientStore, SignInClientState signInClientState, ITunnelClientStore tunnelClientStore, IMessengerSender messengerSender, ISerializer serializer, TunnelTransfer tunnelTransfer, CounterDecenter counterDecenter)
         {
@@ -117,6 +126,10 @@ namespace linker.messenger.tunnel.client
             {
                 try
                 {
+                    //重试间隔（毫秒）逐步增大：5s,10s,20s,30s，之后固定为 60s，避免不可达的 STUN 持续产生 UDP 流量影响通信
+                    int[] retryDelays = new[] { 5000, 10000, 20000, 30000 };
+                    int attempt = 0;
+
                     int isp = 0, city = 0, nat = 0;
                     while (true)
                     {
@@ -127,7 +140,10 @@ namespace linker.messenger.tunnel.client
                         city += results[1];
                         nat += results[2];
                         if (isp > 0 && city > 0 && nat > 0) break;
-                        await Task.Delay(10000).ConfigureAwait(false);
+
+                        int delay = attempt < retryDelays.Length ? retryDelays[attempt] : 60000;
+                        attempt++;
+                        await Task.Delay(delay).ConfigureAwait(false);
                     }
                     await messengerSender.SendOnly(new MessageRequestWrap
                     {
@@ -152,38 +168,46 @@ namespace linker.messenger.tunnel.client
         private async Task<int> GetNat(CancellationToken token, int flag)
         {
             if (flag > 0) return 0;
-            try
+
+            foreach ((string host, int port) in stunServers)
             {
-                IPEndPoint server = await NetworkHelper.GetEndPointAsync("stun.hot-chilli.net", 3478);
-                await using StunClient5389UDP client = new(server, new IPEndPoint(server.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any, 0));
-                await client.MappingBehaviorTestAsync().ConfigureAwait(false);
-
-                MappingBehavior mapping = client.State?.MappingBehavior ?? MappingBehavior.Unknown;
-                await client.FilteringBehaviorTestAsync(token).ConfigureAwait(false);
-                FilteringBehavior filtering = client.State?.FilteringBehavior ?? FilteringBehavior.Unknown;
-
-                if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
-                    LoggerHelper.Instance.Debug($"NAT {mapping}/{filtering}");
-
-
-                bool result = filtering != FilteringBehavior.UnsupportedServer && mapping != MappingBehavior.UnsupportedServer
-                    && filtering != FilteringBehavior.Unknown && mapping != MappingBehavior.Unknown
-                    && filtering != FilteringBehavior.None && mapping != MappingBehavior.Fail;
-                if (result)
+                if (token.IsCancellationRequested) break;
+                try
                 {
-                    tunnelClientStore.Network.Net.Nat = $"{mapping}/{filtering}/{(server.AddressFamily == AddressFamily.InterNetwork ? "IPV4" : "IPV6")}-{GetSuccessRateValue(mapping, filtering)}%";
-                    await tunnelClientStore.SetNetwork(tunnelClientStore.Network);
-                    OnChange?.Invoke();
-                }
+                    IPEndPoint server = await NetworkHelper.GetEndPointAsync(host, port);
+                    if (server == null) continue;
 
-                return result ? 1 : 0;
-            }
-            catch (TaskCanceledException) { }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
-                    LoggerHelper.Instance.Error(ex);
+                    await using StunClient5389UDP client = new(server, new IPEndPoint(server.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any, 0));
+                    await client.MappingBehaviorTestAsync().ConfigureAwait(false);
+
+                    MappingBehavior mapping = client.State?.MappingBehavior ?? MappingBehavior.Unknown;
+                    await client.FilteringBehaviorTestAsync(token).ConfigureAwait(false);
+                    FilteringBehavior filtering = client.State?.FilteringBehavior ?? FilteringBehavior.Unknown;
+
+                    if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
+                        LoggerHelper.Instance.Debug($"NAT {mapping}/{filtering} via {host}:{port}");
+
+
+                    bool result = filtering != FilteringBehavior.UnsupportedServer && mapping != MappingBehavior.UnsupportedServer
+                        && filtering != FilteringBehavior.Unknown && mapping != MappingBehavior.Unknown
+                        && filtering != FilteringBehavior.None && mapping != MappingBehavior.Fail;
+                    if (result)
+                    {
+                        tunnelClientStore.Network.Net.Nat = $"{mapping}/{filtering}/{(server.AddressFamily == AddressFamily.InterNetwork ? "IPV4" : "IPV6")}-{GetSuccessRateValue(mapping, filtering)}%";
+                        await tunnelClientStore.SetNetwork(tunnelClientStore.Network);
+                        OnChange?.Invoke();
+                        return 1;
+                    }
+                    //该服务器无法给出有效结果，尝试下一个
+                }
+                catch (TaskCanceledException) { break; }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
+                        LoggerHelper.Instance.Error(ex);
+                    //该服务器探测失败，尝试下一个
+                }
             }
             return 0;
         }

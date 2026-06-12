@@ -108,13 +108,33 @@ namespace linker.messenger.channel
             if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
                 LoggerHelper.Instance.Warning($"{TransactionId} add connection {connection.GetHashCode()} {connection.ToJson()}");
 
-            if (channelConnectionCaching.TryGetValue(connection.RemoteMachineId, TransactionId, out ITunnelConnection connectionOld) && connection.Equals(connectionOld) == false)
-            {
-                TimerHelper.SetTimeout(connectionOld.Dispose, 5000);
-            }
+            channelConnectionCaching.TryGetValue(connection.RemoteMachineId, TransactionId, out ITunnelConnection connectionOld);
+            bool replacingOld = connectionOld != null && connection.Equals(connectionOld) == false;
+
             pcpTransfer.AddConnection(connection);
             connection = channelConnectionCaching.Add(connection);
             Version.Increment();
+
+            //升级到P2P时，确认新连接稳定后再释放旧的中继连接，避免P2P瞬断后无中继可用造成抖动
+            if (replacingOld)
+            {
+                ITunnelConnection oldToDispose = connectionOld;
+                ITunnelConnection newConnection = connection;
+                TimerHelper.SetTimeout(() =>
+                {
+                    //新连接仍然有效才释放旧连接；否则回退到旧中继，避免连接中断
+                    if (channelConnectionCaching.TryGetValue(newConnection.RemoteMachineId, TransactionId, out ITunnelConnection current)
+                        && current.Equals(newConnection) && newConnection.Connected)
+                    {
+                        try { oldToDispose.Dispose(); } catch (Exception) { }
+                    }
+                    else if (oldToDispose.Connected)
+                    {
+                        channelConnectionCaching.Add(oldToDispose);
+                        Version.Increment();
+                    }
+                }, 5000);
+            }
 
             Connected(connection);
             Add(connection);
@@ -128,34 +148,21 @@ namespace linker.messenger.channel
                 return connection;
             }
 
-            //开始失败，说明在操作中 — wait for relay instead of returning null
+            //开始失败，说明在操作中。不阻塞数据包线程，后台建立中继+打洞
             if (operatingMultipleManager.StartOperation($"{machineId}@{TransactionId}") == false)
             {
-                // Another coroutine is already doing RelayAndP2P; wait for relay to come up.
-                connection = await tunnelTransfer.ConnectAsync(machineId, TransactionId, denyProtocols, flag: "relay", tunnelTypes: [TunnelType.Relay]).ConfigureAwait(false);
-                if (connection != null)
-                {
-                    channelConnectionCaching.Add(connection);
-                }
-                return connection;
+                return null;
             }
-
-            // First caller: establish relay synchronously so packets are not dropped,
-            // then upgrade to P2P in the background.
-            try
-            {
-                connection = await RelayAndP2P(machineId, denyProtocols).ConfigureAwait(false);
-                if (connection != null)
-                {
-                    channelConnectionCaching.Add(connection);
-                }
-            }
-            finally
+            _ = RelayAndP2P(machineId, denyProtocols).ContinueWith((result) =>
             {
                 operatingMultipleManager.StopOperation($"{machineId}@{TransactionId}");
-            }
+                if (result.Result != null)
+                {
+                    channelConnectionCaching.Add(result.Result);
+                }
+            }).ConfigureAwait(false);
 
-            return connection;
+            return null;
         }
         private async Task<ITunnelConnection> RelayAndP2P(string machineId, TunnelProtocolType denyProtocols)
         {
@@ -163,28 +170,26 @@ namespace linker.messenger.channel
             {
                 return null;
             }
-            //不在线就不必连了
-            if (await signInClientTransfer.GetOnline(machineId).ConfigureAwait(false) == false)
+
+            //先快速建立中继，立刻可以通信
+            ITunnelConnection connection = await tunnelTransfer.ConnectAsync(machineId, TransactionId, denyProtocols, flag: "relay", tunnelTypes: [TunnelType.Relay]).ConfigureAwait(false);
+            if (connection != null)
             {
-                return null;
+                channelConnectionCaching.Add(connection);
             }
 
-            ITunnelConnection connection = await tunnelTransfer.ConnectAsync(machineId, TransactionId, denyProtocols).ConfigureAwait(false);
-            if (connection != null && connection.Type != TunnelType.P2P)
+            //后台打洞，升级到P2P。延迟1秒开始，最多尝试3次，避免频繁打洞导致连接抖动
+            tunnelTransfer.StartBackground(machineId, TransactionId, denyProtocols, () =>
             {
-                //后台打洞 — start immediately (delay=0), try up to 5 times
-                tunnelTransfer.StartBackground(machineId, TransactionId, denyProtocols, () =>
-                {
-                    return channelConnectionCaching.TryGetValue(machineId, TransactionId, out ITunnelConnection _connection)
-                    && _connection.Connected
-                    && _connection.Type == TunnelType.P2P;
+                return channelConnectionCaching.TryGetValue(machineId, TransactionId, out ITunnelConnection _connection)
+                && _connection.Connected
+                && _connection.Type == TunnelType.P2P;
 
-                }, (_connection) =>
-                {
-                    return Task.CompletedTask;
+            }, (_connection) =>
+            {
+                return Task.CompletedTask;
 
-                }, 5, 0);
-            }
+            }, 3, 1000);
 
             return connection;
         }

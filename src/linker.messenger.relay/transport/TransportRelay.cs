@@ -7,6 +7,7 @@ using linker.messenger.signin;
 using linker.tunnel.connection;
 using linker.tunnel.wanport;
 using System.Buffers;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -46,6 +47,10 @@ namespace linker.tunnel.transport
         private readonly IMessengerStore messengerStore;
         private readonly ITunnelMessengerAdapter tunnelMessengerAdapter;
 
+        //各中继节点最新ping延迟(NodeId -> 毫秒)，由 RelayClientTestTransfer 后台测速回写；
+        //仅发起方(A)在 ConnectNodeServer 选节点时据此选最近节点，应答方(B)不参与选择，保证双方会合在同一节点
+        private readonly ConcurrentDictionary<string, int> nodeDelays = new();
+
         public TransportRelay(IMessengerSender messengerSender, ISerializer serializer, SignInClientState signInClientState, IMessengerStore messengerStore, ITunnelMessengerAdapter tunnelMessengerAdapter)
         {
             this.messengerSender = messengerSender;
@@ -53,6 +58,26 @@ namespace linker.tunnel.transport
             this.signInClientState = signInClientState;
             this.messengerStore = messengerStore;
             this.tunnelMessengerAdapter = tunnelMessengerAdapter;
+        }
+
+        /// <summary>
+        /// 后台测速结果回写。建立中继时发起方(A)据此选择最近(最低ping)节点；NodeId为空的项忽略。
+        /// </summary>
+        /// <param name="delays">NodeId -> ping延迟(毫秒)，-1或0表示不可达/未知</param>
+        public void UpdateNodeDelays(IEnumerable<KeyValuePair<string, int>> delays)
+        {
+            if (delays == null)
+            {
+                return;
+            }
+            foreach (KeyValuePair<string, int> item in delays)
+            {
+                if (string.IsNullOrWhiteSpace(item.Key))
+                {
+                    continue;
+                }
+                nodeDelays[item.Key] = item.Value;
+            }
         }
 
         private X509Certificate certificate;
@@ -170,7 +195,17 @@ namespace linker.tunnel.transport
 
             try
             {
-                foreach (var node in ask.Nodes.Where(c => c.NodeId == ask.Info.NodeId).Concat(ask.Nodes.Where(c => c.NodeId != ask.Info.NodeId)))
+                //节点选择只在发起方(A)进行，应答方(B)在OnBegin里只连A通过TransactionTag指定的节点，保证双方落在同一中继节点会合。
+                //延迟来自后台测速回写的 nodeDelays（ask.Nodes 自带的 Delay 来自服务器，恒为0不可用）。
+                //顺序：服务器指定的会合节点(ask.Info.NodeId)最前 -> 已测速(delay>0)按延迟升序(最近优先) -> 未测速保持原始顺序作为确定性兜底
+                IEnumerable<RelayServerNodeStoreInfo> orderedNodes = ask.Nodes
+                    .Select((node, index) => (node, index, delay: nodeDelays.TryGetValue(node.NodeId, out int d) ? d : -1))
+                    .OrderBy(x => string.IsNullOrEmpty(ask.Info.NodeId) == false && x.node.NodeId == ask.Info.NodeId ? 0 : 1)
+                    .ThenBy(x => x.delay > 0 ? 0 : 1)
+                    .ThenBy(x => x.delay > 0 ? x.delay : int.MaxValue)
+                    .ThenBy(x => x.index)
+                    .Select(x => x.node);
+                foreach (var node in orderedNodes)
                 {
                     try
                     {
@@ -201,6 +236,12 @@ namespace linker.tunnel.transport
                         };
                         if (await SendMessage(socket, relayMessage).ConfigureAwait(false))
                         {
+                            //把真正连上的节点的【已解析确定IP】写回 Host，随后 TransactionTag=ask.Info.ToJson() 把这个确定IP发给应答方(B)。
+                            //这样 B 在 OnBegin 里不会因为重新解析主机名(DNS轮询)而连到不同IP，保证 A、B 落在同一个节点->同一个master进程会合。
+                            if (ask.Info.Node != null)
+                            {
+                                ask.Info.Host = ask.Info.Node.Address.ToString();
+                            }
                             return socket;
                         }
                         socket.SafeClose();
@@ -435,7 +476,16 @@ namespace linker.tunnel.transport
         {
             if (string.IsNullOrWhiteSpace(relay.Host) == false)
             {
-                relay.Node = NetworkHelper.GetEndPoint(relay.Host, 1802);
+                //Host 已经是确定IP时(发起方A把连上的节点解析后的IP写进了Host)，直接构造端点，
+                //避免重新走DNS(轮询)导致应答方B连到不同IP，也避免IPv6地址被按":"误解析成host:port。
+                if (IPAddress.TryParse(relay.Host, out IPAddress ip))
+                {
+                    relay.Node = new IPEndPoint(ip, 1802);
+                }
+                else
+                {
+                    relay.Node = NetworkHelper.GetEndPoint(relay.Host, 1802);
+                }
             }
             if (relay.Node == null || relay.Node.Address.Equals(IPAddress.Any) || relay.Node.Address.Equals(IPAddress.Loopback))
             {

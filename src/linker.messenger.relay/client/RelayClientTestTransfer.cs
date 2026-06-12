@@ -53,6 +53,12 @@ namespace linker.messenger.relay.client
                     }
                 });
                 await Task.WhenAll(tasks).ConfigureAwait(false);
+
+                //把测速结果回写到中继传输层，供发起方(A)在 ConnectNodeServer 选最近节点；
+                //应答方(B)不参与选择，只跟随 A 通过 TransactionTag 指定的节点。
+                transportRelay.UpdateNodeDelays(Nodes
+                    .Where(c => string.IsNullOrWhiteSpace(c.NodeId) == false)
+                    .Select(c => new KeyValuePair<string, int>(c.NodeId, c.Delay)));
             }
             catch (Exception)
             {

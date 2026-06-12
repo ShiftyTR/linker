@@ -8,6 +8,7 @@ using linker.tun.device;
 using linker.tunnel;
 using linker.tunnel.connection;
 using System.Buffers.Binary;
+using System.Collections.Concurrent;
 
 namespace linker.messenger.tuntap.client
 {
@@ -26,6 +27,12 @@ namespace linker.messenger.tuntap.client
         private readonly TuntapCidrConnectionManager tuntapCidrConnectionManager;
         private readonly TuntapCidrDecenterManager tuntapCidrDecenterManager;
         private readonly TuntapDecenter tuntapDecenter;
+
+        //隧道建立期间（先中继后打洞，约2-3秒）到达的数据包先缓存，连接就绪后立即补发，避免首批ping丢包
+        private const int PendingMaxIp = 64;
+        private const int PendingMaxPacketsPerIp = 8;
+        private const long PendingTtlMilliseconds = 5000;
+        private readonly ConcurrentDictionary<uint, PendingConnectionPackets> pendingPackets = new();
 
         public TuntapProxy(ISignInClientStore signInClientStore,
             TunnelTransfer tunnelTransfer, PcpTransfer pcpTransfer,
@@ -46,6 +53,8 @@ namespace linker.messenger.tuntap.client
             connection.BeginReceive(this, null);
             //有哪些目标IP用了相同目标隧道，更新一下
             tuntapCidrConnectionManager.Update(connection);
+            //连接就绪，补发隧道建立期间缓存的数据包
+            _ = FlushPending(connection);
         }
 
         /// <summary>
@@ -93,6 +102,8 @@ namespace linker.messenger.tuntap.client
                 return;
             }
 
+            //隧道尚未建立，先把数据包缓存起来，连接就绪后补发，避免首批ping丢包
+            EnqueuePending(ip, packet.Buffer, packet.Offset, packet.Length);
             await ConnectTunnel(ip).ConfigureAwait(false);
 
         }
@@ -137,6 +148,93 @@ namespace linker.messenger.tuntap.client
             {
                 tuntapCidrConnectionManager.Add(ip, connection);
             }
+        }
+
+        /// <summary>
+        /// 隧道建立期间到达的数据包先缓存，连接就绪后由 FlushPending 补发，避免首批ping丢包
+        /// </summary>
+        private void EnqueuePending(uint ip, byte[] buffer, int offset, int length)
+        {
+            if (length <= 0)
+            {
+                return;
+            }
+            //整体IP数量超限时丢弃，防止内存膨胀（极端场景下的保护）
+            if (pendingPackets.Count >= PendingMaxIp && pendingPackets.ContainsKey(ip) == false)
+            {
+                return;
+            }
+
+            byte[] copy = new byte[length];
+            System.Buffer.BlockCopy(buffer, offset, copy, 0, length);
+
+            PendingConnectionPackets queue = pendingPackets.GetOrAdd(ip, _ => new PendingConnectionPackets());
+            lock (queue)
+            {
+                queue.LastTicks = Environment.TickCount64;
+                queue.Packets.Enqueue(copy);
+                //单IP数量超限时丢弃最旧的，只保留最新的若干个
+                while (queue.Packets.Count > PendingMaxPacketsPerIp && queue.Packets.TryDequeue(out _))
+                {
+                }
+            }
+        }
+
+        /// <summary>
+        /// 连接就绪后补发该连接对应目标IP上缓存的数据包，并清理过期缓存
+        /// </summary>
+        private async Task FlushPending(ITunnelConnection connection)
+        {
+            if (pendingPackets.IsEmpty)
+            {
+                return;
+            }
+
+            long now = Environment.TickCount64;
+            foreach (uint ip in pendingPackets.Keys)
+            {
+                if (pendingPackets.TryGetValue(ip, out PendingConnectionPackets queue) == false)
+                {
+                    continue;
+                }
+                //过期缓存直接清理，避免数据包陈旧后还补发
+                if (now - queue.LastTicks > PendingTtlMilliseconds)
+                {
+                    pendingPackets.TryRemove(ip, out _);
+                    continue;
+                }
+                //仅补发已就绪连接对应目标IP的数据包
+                if (tuntapCidrConnectionManager.TryGet(ip, out ITunnelConnection target) == false
+                    || target.Connected == false
+                    || target.Equals(connection) == false)
+                {
+                    continue;
+                }
+
+                pendingPackets.TryRemove(ip, out _);
+                byte[][] packets;
+                lock (queue)
+                {
+                    packets = queue.Packets.ToArray();
+                }
+                foreach (byte[] packet in packets)
+                {
+                    try
+                    {
+                        await connection.SendAsync(packet, 0, packet.Length).ConfigureAwait(false);
+                    }
+                    catch (Exception)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        private sealed class PendingConnectionPackets
+        {
+            public long LastTicks;
+            public ConcurrentQueue<byte[]> Packets { get; } = new();
         }
     }
 }
