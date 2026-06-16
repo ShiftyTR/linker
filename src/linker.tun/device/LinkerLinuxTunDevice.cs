@@ -4,16 +4,14 @@ using Microsoft.Win32.SafeHandles;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace linker.tun.device
 {
     internal sealed class LinkerLinuxTunDevice : ILinkerTunDevice
     {
-
         private string name = string.Empty;
         public string Name => name;
-        public bool Running => safeFileHandle != null;
+        public bool Running => safeFileHandle != null && !safeFileHandle.IsInvalid && !safeFileHandle.IsClosed;
 
         private string interfaceLinux = string.Empty;
         private FileStream fsRead = null;
@@ -36,95 +34,124 @@ namespace linker.tun.device
 
             if (Running)
             {
-                error = $"Adapter already exists";
+                error = "Adapter already exists";
                 return false;
             }
-            if (Create(out error) == false)
+
+            if (!Create(out error))
             {
                 return false;
             }
-            if (Open(out error) == false)
+
+            if (!Open(out error))
             {
-                Shutdown();
+                // Open failed: destroy the interface we just created
+                DestroyInterface();
                 return false;
             }
+
             fsRead = new FileStream(safeFileHandle, FileAccess.Read, 65 * 1024, true);
             fsWrite = new FileStream(safeFileHandle, FileAccess.Write, 65 * 1024, true);
-
             interfaceLinux = GetLinuxInterfaceNum();
             return true;
         }
+
         private bool Create(out string error)
         {
             error = string.Empty;
 
-            //byte[] ipv6 = IPAddress.Parse("fe80::1818:1818:1818:1818").GetAddressBytes();
-            //address.GetAddressBytes().CopyTo(ipv6, ipv6.Length - 4);
+            // Remove any stale interface left from a previous crash or unclean shutdown.
+            // Safe to run even if the interface doesn't exist — commands fail silently.
+            DestroyInterface();
 
-            CommandHelper.Linux(string.Empty, new string[] {
+            // Create the interface and bring it up
+            CommandHelper.Linux(string.Empty, new string[]
+            {
                 $"ip tuntap add mode tun dev {Name}",
                 $"ip addr add {address}/{prefixLength} dev {Name}",
-                //$"ip addr add {new IPAddress(ipv6)}/64 dev {Name}",
                 $"ip link set dev {Name} up"
+            }, out string createError);
+
+            // Verify using ip link show — intentionally avoids ifconfig (net-tools
+            // is not installed on many minimal Linux distributions)
+            string showOutput = CommandHelper.Linux(string.Empty, new string[]
+            {
+                $"ip link show {Name}"
             });
 
-            string str = CommandHelper.Linux(string.Empty, new string[] { $"ifconfig" });
-            if (str.Contains(Name) == false)
+            if (!showOutput.Contains(Name))
             {
-                CommandHelper.Linux(string.Empty, new string[] { $"ip tuntap add mode tun dev {Name}" }, out error);
+                error = string.IsNullOrWhiteSpace(createError)
+                    ? $"Failed to create tun interface '{Name}'"
+                    : createError;
+                DestroyInterface();
                 return false;
             }
 
             return true;
         }
+
         private bool Open(out string error)
         {
             error = string.Empty;
 
-            SafeFileHandle _safeFileHandle = File.OpenHandle("/dev/net/tun", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite, FileOptions.Asynchronous);
-            if (_safeFileHandle.IsInvalid)
+            SafeFileHandle handle = File.OpenHandle(
+                "/dev/net/tun",
+                FileMode.Open,
+                FileAccess.ReadWrite,
+                FileShare.ReadWrite,
+                FileOptions.Asynchronous);
+
+            if (handle.IsInvalid)
             {
-                _safeFileHandle?.Dispose();
-                Shutdown();
-                error = $"open file /dev/net/tun fail {Marshal.GetLastWin32Error()}";
+                handle.Dispose();
+                error = $"Failed to open /dev/net/tun, errno: {Marshal.GetLastWin32Error()}";
                 return false;
             }
 
-            int ioctl = LinuxAPI.Ioctl(Name, _safeFileHandle, 1074025674);
-            if (ioctl != 0)
+            int result = LinuxAPI.Ioctl(Name, handle, 1074025674);
+            if (result != 0)
             {
-                _safeFileHandle?.Dispose();
-                Shutdown();
-                error = $"Ioctl fail : {ioctl}，{Marshal.GetLastWin32Error()}";
+                handle.Dispose();
+                error = $"setup ioctl(TUNSETIFF) failed: result={result}, errno={Marshal.GetLastWin32Error()}";
                 return false;
             }
-            safeFileHandle = _safeFileHandle;
 
+            safeFileHandle = handle;
             return true;
+        }
+
+        // Closes only the file handles — does NOT touch the network interface.
+        private void CloseHandles()
+        {
+            try { safeFileHandle?.Dispose(); } catch { }
+            safeFileHandle = null;
+
+            try { fsRead?.Flush(); } catch { }
+            try { fsRead?.Close(); fsRead?.Dispose(); } catch { }
+            fsRead = null;
+
+            try { fsWrite?.Flush(); } catch { }
+            try { fsWrite?.Close(); fsWrite?.Dispose(); } catch { }
+            fsWrite = null;
+        }
+
+        // Removes the network interface — safe to call even if it doesn't exist.
+        private void DestroyInterface()
+        {
+            CommandHelper.Linux(string.Empty, new string[]
+            {
+                $"ip link set dev {Name} down",
+                $"ip link del {Name}",
+                $"ip tuntap del mode tun dev {Name}"
+            });
         }
 
         public void Shutdown()
         {
-            try
-            {
-                safeFileHandle?.Dispose();
-                safeFileHandle = null;
-
-                try { fsRead?.Flush(); } catch (Exception) { }
-                try { fsRead?.Close(); fsRead?.Dispose(); } catch (Exception) { }
-                fsRead = null;
-
-                try { fsWrite?.Flush(); } catch (Exception) { }
-                try { fsWrite?.Close(); fsWrite?.Dispose(); } catch (Exception) { }
-                fsWrite = null;
-            }
-            catch (Exception)
-            {
-            }
-
+            CloseHandles();
+            DestroyInterface();
             interfaceLinux = string.Empty;
-            CommandHelper.Linux(string.Empty, new string[] { $"ip link del {Name}", $"ip tuntap del mode tun dev {Name}" });
-
             GC.Collect();
         }
 
@@ -133,18 +160,18 @@ namespace linker.tun.device
             if (safeFileHandle == null) return;
             try
             {
-                CommandHelper.Linux(string.Empty, new string[] {
+                CommandHelper.Linux(string.Empty, new string[]
+                {
                     $"ip link set dev {Name} up"
                 });
             }
-            catch (Exception)
-            {
-            }
+            catch { }
         }
 
         public void SetMssFix(int value = 0)
         {
-            CommandHelper.Linux(string.Empty, new string[] {
+            CommandHelper.Linux(string.Empty, new string[]
+            {
                 @$"iptables-save | grep -v -E -- ""-[oi] {Name}\s*.*\s* -j TCPMSS"" | iptables-restore",
             });
 
@@ -152,7 +179,8 @@ namespace linker.tun.device
             {
                 string _value = value == 7 ? "--clamp-mss-to-pmtu" : $"--set-mss {value}";
 
-                string[] commands = new string[] {
+                CommandHelper.Linux(string.Empty, new string[]
+                {
                     $"iptables -t mangle -A INPUT -i {Name} -p tcp --syn -j TCPMSS {_value}",
                     $"iptables -t mangle -A INPUT -i {Name} -p tcp --tcp-flags SYN SYN -j TCPMSS {_value}",
                     $"iptables -t mangle -A OUTPUT -o {Name} -p tcp --syn -j TCPMSS {_value}",
@@ -161,50 +189,38 @@ namespace linker.tun.device
                     $"iptables -t mangle -A FORWARD -i {Name} -o {interfaceLinux} -p tcp --tcp-flags SYN SYN -j TCPMSS {_value}",
                     $"iptables -t mangle -A FORWARD -i {interfaceLinux} -o {Name} -p tcp --syn -j TCPMSS {_value}",
                     $"iptables -t mangle -A FORWARD -i {interfaceLinux} -o {Name} -p tcp --tcp-flags SYN SYN -j TCPMSS {_value}",
-                };
-                string str = CommandHelper.Linux(string.Empty, commands);
+                });
             }
         }
+
         public void SetMtu(int value)
         {
-            if (value > 0)
+            string mtu = value > 0 ? value.ToString() : "1420";
+            CommandHelper.Linux(string.Empty, new string[]
             {
-                CommandHelper.Linux(string.Empty, new string[] { $"ip link set dev {Name} mtu {value}" });
-            }
-            else
-            {
-                CommandHelper.Linux(string.Empty, new string[] { $"ip link set dev {Name} mtu 1420" });
-            }
-
+                $"ip link set dev {Name} mtu {mtu}"
+            });
         }
 
-        private string GetDefaultInterface()
-        {
-            return CommandHelper.Linux(string.Empty, ["ip route show default | awk '{print $5}'"]);
-        }
         public void SetNat(out string error)
         {
             error = string.Empty;
-            if (address == null || address.Equals(IPAddress.Any))
-            {
-                return;
-            }
+            if (address == null || address.Equals(IPAddress.Any)) return;
+
             try
             {
                 IPAddress network = NetworkHelper.ToNetworkIP(address, NetworkHelper.ToPrefixValue(prefixLength));
 
-                string[] commands = new string[] {
+                CommandHelper.Linux(string.Empty, new string[]
+                {
                     $"sysctl -w net.ipv4.ip_forward=1",
                     $"sysctl -w net.ipv4.conf.{Name}.forwarding=1",
                     @$"iptables-save | grep -v -E -- ""-[oi] {Name}\s*.*\s* -j (ACCEPT|MASQUERADE|DROP|REJECT)"" | iptables-restore",
-
                     $"iptables -I FORWARD -i {Name} -j ACCEPT",
                     $"iptables -I FORWARD -o {Name} -j ACCEPT",
-
                     $"iptables -t nat -I POSTROUTING -o {Name} -j MASQUERADE",
                     $"iptables -t nat -I POSTROUTING ! -o {Name} -s {network}/{prefixLength} -j MASQUERADE",
-                };
-                string str = CommandHelper.Linux(string.Empty, commands);
+                });
             }
             catch (Exception ex)
             {
@@ -216,24 +232,18 @@ namespace linker.tun.device
         {
             error = string.Empty;
             if (address == null || address.Equals(IPAddress.Any)) return;
+
             try
             {
-                string[] commands = new string[] {
+                CommandHelper.Linux(string.Empty, new string[]
+                {
                     @$"iptables-save | grep -v -E -- ""-[oi] {Name}\s*.*\s* -j (ACCEPT|MASQUERADE|DROP|REJECT)"" | iptables-restore",
                     @$"iptables-save | grep -v -E -- ""-[oi] {Name}\s*.*\s* -j TCPMSS"" | iptables-restore",
-                };
-                string str = CommandHelper.Linux(string.Empty, commands);
+                });
             }
             catch (Exception ex)
             {
                 error = ex.Message;
-            }
-        }
-        private void RestartFirewall()
-        {
-            if (RuntimeInformation.OSDescription.Contains("OpenWrt"))
-            {
-                CommandHelper.Linux(string.Empty, new string[] { "/etc/init.d/firewall restart" });
             }
         }
 
@@ -247,43 +257,46 @@ namespace linker.tun.device
                 {
                     IPEndPoint dist = IPEndPoint.Parse(c[^1].Replace("to:", ""));
                     int port = int.Parse(c[^2].Replace("dpt:", ""));
-                    return new LinkerTunDeviceForwardItem { ListenAddr = IPAddress.Any, ListenPort = port, ConnectAddr = dist.Address, ConnectPort = dist.Port };
+                    return new LinkerTunDeviceForwardItem
+                    {
+                        ListenAddr = IPAddress.Any,
+                        ListenPort = port,
+                        ConnectAddr = dist.Address,
+                        ConnectPort = dist.Port
+                    };
                 });
             return lines.ToList();
         }
+
         public void AddForward(List<LinkerTunDeviceForwardItem> forwards)
         {
-            string[] commands = forwards.Where(c => c != null && c.Enable).SelectMany(c =>
+            string[] commands = forwards.Where(c => c != null && c.Enable).SelectMany(c => new string[]
             {
-                return new string[] {
-                    $"sysctl -w net.ipv4.ip_forward=1",
-                    $"iptables -t nat -A PREROUTING -p tcp --dport {c.ListenPort} -j DNAT --to-destination {c.ConnectAddr}:{c.ConnectPort}",
-                    $"iptables -t nat -A POSTROUTING -p tcp --dport {c.ConnectPort} -j MASQUERADE",
-                    $"iptables -t nat -A PREROUTING -p udp --dport {c.ListenPort} -j DNAT --to-destination {c.ConnectAddr}:{c.ConnectPort}",
-                    $"iptables -t nat -A POSTROUTING -p udp --dport {c.ConnectPort} -j MASQUERADE",
-                };
-
+                $"sysctl -w net.ipv4.ip_forward=1",
+                $"iptables -t nat -A PREROUTING -p tcp --dport {c.ListenPort} -j DNAT --to-destination {c.ConnectAddr}:{c.ConnectPort}",
+                $"iptables -t nat -A POSTROUTING -p tcp --dport {c.ConnectPort} -j MASQUERADE",
+                $"iptables -t nat -A PREROUTING -p udp --dport {c.ListenPort} -j DNAT --to-destination {c.ConnectAddr}:{c.ConnectPort}",
+                $"iptables -t nat -A POSTROUTING -p udp --dport {c.ConnectPort} -j MASQUERADE",
             }).ToArray();
+
             if (commands.Length > 0)
                 CommandHelper.Linux(string.Empty, commands);
         }
+
         public void RemoveForward(List<LinkerTunDeviceForwardItem> forwards)
         {
-            string[] commands = forwards.Where(c => c != null && c.Enable).SelectMany(c =>
+            string[] commands = forwards.Where(c => c != null && c.Enable).SelectMany(c => new string[]
             {
-                return new string[] {
-                    $"sysctl -w net.ipv4.ip_forward=1",
-                    $"iptables -t nat -D PREROUTING -p tcp --dport {c.ListenPort} -j DNAT --to-destination {c.ConnectAddr}:{c.ConnectPort}",
-                    $"iptables -t nat -D POSTROUTING -p tcp --dport {c.ConnectPort} -j MASQUERADE",
-                    $"iptables -t nat -D PREROUTING -p udp --dport {c.ListenPort} -j DNAT --to-destination {c.ConnectAddr}:{c.ConnectPort}",
-                    $"iptables -t nat -D POSTROUTING -p udp --dport {c.ConnectPort} -j MASQUERADE"
-                };
-
+                $"sysctl -w net.ipv4.ip_forward=1",
+                $"iptables -t nat -D PREROUTING -p tcp --dport {c.ListenPort} -j DNAT --to-destination {c.ConnectAddr}:{c.ConnectPort}",
+                $"iptables -t nat -D POSTROUTING -p tcp --dport {c.ConnectPort} -j MASQUERADE",
+                $"iptables -t nat -D PREROUTING -p udp --dport {c.ListenPort} -j DNAT --to-destination {c.ConnectAddr}:{c.ConnectPort}",
+                $"iptables -t nat -D POSTROUTING -p udp --dport {c.ConnectPort} -j MASQUERADE",
             }).ToArray();
+
             if (commands.Length > 0)
                 CommandHelper.Linux(string.Empty, commands);
         }
-
 
         public void AddRoute(LinkerTunDeviceRouteItem[] ips)
         {
@@ -291,16 +304,17 @@ namespace linker.tun.device
             {
                 uint prefixValue = NetworkHelper.ToPrefixValue(item.PrefixLength);
                 IPAddress network = NetworkHelper.ToNetworkIP(item.Address, prefixValue);
-
-                return $"ip route add {network}/{item.PrefixLength} via {address} dev {Name} metric 1 ";
+                return $"ip route add {network}/{item.PrefixLength} via {address} dev {Name} metric 1";
             }).ToArray();
+
             if (commands.Length > 0)
             {
                 if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
-                    LoggerHelper.Instance.Warning($"tuntap linux add route: {string.Join("\r\n", commands)}");
+                    LoggerHelper.Instance.Warning($"tuntap linux add route:\r\n{string.Join("\r\n", commands)}");
                 CommandHelper.Linux(string.Empty, commands);
             }
         }
+
         public void RemoveRoute(LinkerTunDeviceRouteItem[] ip)
         {
             string[] commands = ip.Select(item =>
@@ -313,15 +327,14 @@ namespace linker.tun.device
             if (commands.Length > 0)
             {
                 if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
-                    LoggerHelper.Instance.Warning($"tuntap linux del route: {string.Join("\r\n", commands)}");
+                    LoggerHelper.Instance.Warning($"tuntap linux del route:\r\n{string.Join("\r\n", commands)}");
                 CommandHelper.Linux(string.Empty, commands);
             }
-
         }
-
 
         private readonly byte[] buffer = new byte[128 * 1024];
         private readonly object writeLockObj = new object();
+
         public byte[] Read(out int length)
         {
             length = 0;
@@ -332,8 +345,8 @@ namespace linker.tun.device
             length += 4;
 
             return buffer;
-
         }
+
         public bool Write(ReadOnlyMemory<byte> buffer)
         {
             if (safeFileHandle == null) return true;
@@ -359,14 +372,16 @@ namespace linker.tun.device
 
         private string GetLinuxInterfaceNum()
         {
-            string output = CommandHelper.Linux(string.Empty, new string[] { "ip route show default | awk '{print $5}'" }).TrimNewLineAndWhiteSapce();
-            return output;
+            return CommandHelper.Linux(string.Empty, new string[]
+            {
+                "ip route show default | awk '{print $5}'"
+            }).TrimNewLineAndWhiteSapce();
         }
 
-        public  Task<bool> CheckAvailable(bool order = false)
+        public Task<bool> CheckAvailable(bool order = false)
         {
             string output = CommandHelper.Linux(string.Empty, new string[] { $"ip link show {Name}" });
-            return  Task.FromResult(output.Contains("state UP"));
+            return Task.FromResult(output.Contains("state UP"));
         }
     }
 }
