@@ -32,15 +32,23 @@ namespace linker.messenger.store.file.messenger
                 X509KeyStorageFlags.Exportable |
                 X509KeyStorageFlags.EphemeralKeySet;
 
-            if (OperatingSystem.IsAndroid())
+            if (OperatingSystem.IsAndroid() || OperatingSystem.IsMacOS() || OperatingSystem.IsLinux())
             {
                 flags = X509KeyStorageFlags.Exportable;
             }
 
-            certificate = new X509Certificate2(
-                pfxBytes,
-                "123456",
-                flags);
+            try
+            {
+                certificate = new X509Certificate2(pfxBytes, "123456", flags);
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // Bu platform EphemeralKeySet desteklemiyor, fallback yap
+                certificate = new X509Certificate2(
+                    pfxBytes,
+                    "123456",
+                    X509KeyStorageFlags.Exportable);
+            }
 
             certificateExport = certificate;
         }
