@@ -129,15 +129,16 @@ namespace linker.tun.device
 
                 string[] commands = new string[]
                 {
-                    // Configure interface - use gateway as destination
-                    $"sudo ifconfig {interfaceMac} {address} {gatewayAddr} netmask 255.255.255.255 up",
+                    // Configure interface - use gateway as destination (point-to-point)
+                    // "inet" is required on some macOS versions for explicit address family
+                    $"sudo ifconfig {interfaceMac} inet {address} {gatewayAddr} netmask 255.255.255.255 up",
                     $"sudo ifconfig {interfaceMac} mtu 1420",
                     
                     // Enable IP forwarding
                     "sudo sysctl -w net.inet.ip.forwarding=1",
                     "sudo sysctl -w net.inet.ip.redirect=0",
                     
-                    // Remove old routes
+                    // Remove old routes (ignore errors)
                     $"sudo route delete -net {networkAddr}/{prefixLength} 2>/dev/null || true",
                     
                     // Add network route via interface
@@ -162,15 +163,23 @@ namespace linker.tun.device
                     }
                 }
 
-                // Verify interface is UP
+                // Verify interface is UP AND has the assigned IP address
+                // macOS utun devices show UP by default even without IP config,
+                // so we MUST check both the UP flag AND the address assignment.
                 result = CommandHelper.Osx(string.Empty, new string[] { $"ifconfig {interfaceMac}" });
-                if (!result.Contains("UP"))
+                bool isUp = result.Contains("UP");
+                bool hasAddress = result.Contains(address.ToString());
+
+                if (!isUp)
                 {
                     error = "Failed to bring interface up";
                     return false;
                 }
-
-                string routes = CommandHelper.Osx(string.Empty, new string[] { "netstat -rn | grep " + interfaceMac });
+                if (!hasAddress)
+                {
+                    error = $"Failed to assign IP {address} to {interfaceMac}. sudo may have failed — ensure the process runs as root or has passwordless sudo configured.";
+                    return false;
+                }
 
                 return true;
             }
@@ -419,6 +428,9 @@ pass inet proto icmp all
 
         private readonly byte[] buffer = new byte[65 * 1024];
         private readonly object writeLockObj = new object();
+        // Reusable write buffer to avoid per-packet allocation on the data path.
+        // Largest standard frame: AF_BE(4) + max IP packet (65KB).
+        private readonly byte[] writeBuffer = new byte[4 + 65 * 1024];
 
         public byte[] Read(out int length)
         {
@@ -436,9 +448,9 @@ pass inet proto icmp all
 
             int payloadLen = n - 4;
 
-            // Your pipeline format: [LEN_LE(4) | IP]
+            // Replace AF header with pipeline format: [LEN_LE(4) | IP]
+            // The IP payload is already at buffer+4, just overwrite the AF header at buffer+0
             BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(0, 4), payloadLen);
-            Buffer.BlockCopy(buffer, 4, buffer, 4, payloadLen);
 
             length = payloadLen + 4;
             return buffer;
@@ -493,11 +505,13 @@ pass inet proto icmp all
                     uint af = (v == 6) ? 30u : 2u; // AF_INET6 / AF_INET
 
                     // Create UTUN frame: [AF_BE(4)] + [IP]
-                    byte[] outBuf = new byte[4 + ipSpan.Length];
-                    BinaryPrimitives.WriteUInt32BigEndian(outBuf.AsSpan(0, 4), af);
-                    ipSpan.CopyTo(outBuf.AsSpan(4));
+                    int frameLen = 4 + ipSpan.Length;
+                    if (frameLen > writeBuffer.Length) return false;
 
-                    fsWrite.Write(outBuf, 0, outBuf.Length);
+                    BinaryPrimitives.WriteUInt32BigEndian(writeBuffer.AsSpan(0, 4), af);
+                    ipSpan.CopyTo(writeBuffer.AsSpan(4));
+
+                    fsWrite.Write(writeBuffer, 0, frameLen);
                     fsWrite.Flush();
                     return true;
                 }
