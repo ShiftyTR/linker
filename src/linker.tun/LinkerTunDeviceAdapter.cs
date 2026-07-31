@@ -379,19 +379,47 @@ namespace linker.tun
         /// <returns></returns>
         public async ValueTask<bool> Write(string srcId, ReadOnlyMemory<byte> buffer)
         {
-            uint dstIp = VerifyPacket(buffer);
+            uint dstIp = VerifyPacket(buffer, out int ipOffset);
             if (Status != LinkerTunDeviceStatus.Running || dstIp == 0) return false;
 
-            LinkerTunPacketHookFlags flags = await ExecWriteHook(buffer, dstIp, srcId).ConfigureAwait(false);
-            return (flags & LinkerTunPacketHookFlags.Write) != LinkerTunPacketHookFlags.Write || linkerTunDevice.Write(buffer);
+            // Strip [LEN_LE(4)] prefix if present (TCP tunnels via StickyPacketCodec
+            // preserve the 4-byte LEN header; UDP tunnels send raw IP directly).
+            ReadOnlyMemory<byte> ipPacket = ipOffset > 0 ? buffer.Slice(ipOffset) : buffer;
+
+            LinkerTunPacketHookFlags flags = await ExecWriteHook(ipPacket, dstIp, srcId).ConfigureAwait(false);
+            return (flags & LinkerTunPacketHookFlags.Write) != LinkerTunPacketHookFlags.Write || linkerTunDevice.Write(ipPacket);
         }
-        private unsafe uint VerifyPacket(ReadOnlyMemory<byte> buffer)
+        private unsafe uint VerifyPacket(ReadOnlyMemory<byte> buffer, out int ipOffset)
         {
+            ipOffset = 0;
             fixed (byte* ptr = buffer.Span)
             {
-                if (BinaryPrimitives.ReverseEndianness(*(ushort*)(ptr + 2)) == buffer.Length)
+                // Format 1: Raw IP packet — IP total length at ptr[2..3] in big-endian
+                ushort ipTotalLen = BinaryPrimitives.ReverseEndianness(*(ushort*)(ptr + 2));
+                if (ipTotalLen == buffer.Length)
                 {
                     return BinaryPrimitives.ReverseEndianness(*(uint*)(ptr + 16));
+                }
+
+                // Format 2: [LEN_LE(4) | IP] — delivered by TCP tunnels (StickyPacketCodec
+                // preserves the 4-byte little-endian length prefix; UDP tunnels strip it).
+                if (buffer.Length >= 24) // LEN header (4) + min IPv4 header (20)
+                {
+                    int payloadLen = BinaryPrimitives.ReadInt32LittleEndian(buffer.Span.Slice(0, 4));
+                    if (payloadLen > 0 && payloadLen + 4 == buffer.Length)
+                    {
+                        byte version = (byte)(*(ptr + 4) >> 4);
+                        if (version == 4 || version == 6)
+                        {
+                            ushort innerTotalLen = BinaryPrimitives.ReverseEndianness(*(ushort*)(ptr + 4 + 2));
+                            if (innerTotalLen == payloadLen)
+                            {
+                                // Destination IP is in the inner packet at offset 16
+                                ipOffset = 4;
+                                return BinaryPrimitives.ReverseEndianness(*(uint*)(ptr + 4 + 16));
+                            }
+                        }
+                    }
                 }
             }
             return 0;
