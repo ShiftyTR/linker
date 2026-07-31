@@ -515,8 +515,9 @@ pass inet proto icmp all
                     fsWrite.Flush();
                     return true;
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    System.Diagnostics.Debug.WriteLine($"TUN macOS Write failed: {ex.Message}");
                     return false;
                 }
             }

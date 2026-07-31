@@ -380,14 +380,31 @@ namespace linker.tun
         public async ValueTask<bool> Write(string srcId, ReadOnlyMemory<byte> buffer)
         {
             uint dstIp = VerifyPacket(buffer, out int ipOffset);
-            if (Status != LinkerTunDeviceStatus.Running || dstIp == 0) return false;
 
-            // Strip [LEN_LE(4)] prefix if present (TCP tunnels via StickyPacketCodec
-            // preserve the 4-byte LEN header; UDP tunnels send raw IP directly).
+            if (Status != LinkerTunDeviceStatus.Running)
+            {
+                System.Diagnostics.Debug.WriteLine($"TUN Write blocked: Status={Status}, not Running");
+                return false;
+            }
+            if (dstIp == 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"TUN Write blocked: VerifyPacket returned 0, len={buffer.Length}");
+                return false;
+            }
+
             ReadOnlyMemory<byte> ipPacket = ipOffset > 0 ? buffer.Slice(ipOffset) : buffer;
 
             LinkerTunPacketHookFlags flags = await ExecWriteHook(ipPacket, dstIp, srcId).ConfigureAwait(false);
-            return (flags & LinkerTunPacketHookFlags.Write) != LinkerTunPacketHookFlags.Write || linkerTunDevice.Write(ipPacket);
+            if ((flags & LinkerTunPacketHookFlags.Write) != LinkerTunPacketHookFlags.Write)
+            {
+                System.Diagnostics.Debug.WriteLine($"TUN Write blocked: hook removed Write flag, flags={flags}");
+                return false;
+            }
+
+            bool ok = linkerTunDevice.Write(ipPacket);
+            if (!ok)
+                System.Diagnostics.Debug.WriteLine($"TUN Write blocked: linkerTunDevice.Write returned false, len={ipPacket.Length}");
+            return ok;
         }
         private unsafe uint VerifyPacket(ReadOnlyMemory<byte> buffer, out int ipOffset)
         {
@@ -396,7 +413,7 @@ namespace linker.tun
             {
                 // Format 1: Raw IP packet — IP total length at ptr[2..3] in big-endian
                 ushort ipTotalLen = BinaryPrimitives.ReverseEndianness(*(ushort*)(ptr + 2));
-                if (ipTotalLen == buffer.Length)
+                if (ipTotalLen <= buffer.Length && ipTotalLen >= 20)
                 {
                     return BinaryPrimitives.ReverseEndianness(*(uint*)(ptr + 16));
                 }
@@ -421,6 +438,8 @@ namespace linker.tun
                         }
                     }
                 }
+
+
             }
             return 0;
         }
