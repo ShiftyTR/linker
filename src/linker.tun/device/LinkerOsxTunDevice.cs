@@ -33,6 +33,8 @@ namespace linker.tun.device
         {
             error = string.Empty;
 
+            System.Diagnostics.Debug.WriteLine($"[TUN Setup] name={info.Name} addr={info.Address} prefix={info.PrefixLength} mtu={info.Mtu}");
+
             this.name = info.Name;
             this.address = info.Address;
             this.prefixLength = info.PrefixLength;
@@ -40,16 +42,21 @@ namespace linker.tun.device
             if (Running)
             {
                 error = ($"Adapter already exists");
+                System.Diagnostics.Debug.WriteLine($"[TUN Setup] FAIL: already running");
                 return false;
             }
 
             if (OpenUtunDevice(out error) == false)
             {
+                System.Diagnostics.Debug.WriteLine($"[TUN Setup] FAIL OpenUtun: {error}");
                 return false;
             }
 
+            System.Diagnostics.Debug.WriteLine($"[TUN Setup] utun opened: {interfaceMac} unit={tunUnit}");
+
             if (ConfigureInterface(out error) == false)
             {
+                System.Diagnostics.Debug.WriteLine($"[TUN Setup] FAIL ConfigureInterface: {error}");
                 Shutdown();
                 return false;
             }
@@ -57,6 +64,7 @@ namespace linker.tun.device
             fsRead = new FileStream(safeFileHandle, FileAccess.Read, 65 * 1024, false);
             fsWrite = new FileStream(safeFileHandle, FileAccess.Write, 65 * 1024, false);
 
+            System.Diagnostics.Debug.WriteLine($"[TUN Setup] SUCCESS: {interfaceMac} running with {address}/{prefixLength}");
             return true;
         }
 
@@ -152,6 +160,9 @@ namespace linker.tun.device
                 };
 
                 string result = CommandHelper.Osx(string.Empty, commands, out error);
+                System.Diagnostics.Debug.WriteLine($"[TUN Config] commands output ({result.Length} chars): {result.Substring(0, Math.Min(result.Length, 500))}");
+                if (!string.IsNullOrEmpty(error))
+                    System.Diagnostics.Debug.WriteLine($"[TUN Config] commands stderr: {error.Substring(0, Math.Min(error.Length, 500))}");
 
                 // Ignore non-critical routing errors
                 if (!string.IsNullOrEmpty(error))
@@ -164,22 +175,34 @@ namespace linker.tun.device
                 }
 
                 // Verify interface is UP AND has the assigned IP address
-                // macOS utun devices show UP by default even without IP config,
-                // so we MUST check both the UP flag AND the address assignment.
                 result = CommandHelper.Osx(string.Empty, new string[] { $"ifconfig {interfaceMac}" });
+                System.Diagnostics.Debug.WriteLine($"[TUN Config] ifconfig {interfaceMac}: {result.Substring(0, Math.Min(result.Length, 500))}");
+                
                 bool isUp = result.Contains("UP");
                 bool hasAddress = result.Contains(address.ToString());
 
                 if (!isUp)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[TUN Config] FAIL: interface not UP");
                     error = "Failed to bring interface up";
                     return false;
                 }
                 if (!hasAddress)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[TUN Config] FAIL: address {address} not assigned to {interfaceMac}");
                     error = $"Failed to assign IP {address} to {interfaceMac}. sudo may have failed — ensure the process runs as root or has passwordless sudo configured.";
                     return false;
                 }
+
+                System.Diagnostics.Debug.WriteLine($"[TUN Config] OK: {interfaceMac} UP with {address}");
+
+                // Verify routes
+                string routeCheck = CommandHelper.Osx(string.Empty, new string[] { $"netstat -rn -f inet | grep {interfaceMac}" });
+                System.Diagnostics.Debug.WriteLine($"[TUN Config] routes for {interfaceMac}: {routeCheck.Substring(0, Math.Min(routeCheck.Length, 500))}");
+
+                // Verify forwarding
+                string fwdCheck = CommandHelper.Osx(string.Empty, new string[] { "sysctl net.inet.ip.forwarding" });
+                System.Diagnostics.Debug.WriteLine($"[TUN Config] ip.forwarding: {fwdCheck.Trim()}");
 
                 return true;
             }
@@ -261,14 +284,17 @@ namespace linker.tun.device
                 IPAddress network = NetworkHelper.ToNetworkIP(address, NetworkHelper.ToPrefixValue(prefixLength));
                 string defaultInterface = GetDefaultInterface().Trim();
 
+                System.Diagnostics.Debug.WriteLine($"[TUN NAT] network={network}/{prefixLength} defaultIf={defaultInterface} tunIf={interfaceMac}");
+
                 if (string.IsNullOrEmpty(defaultInterface))
                 {
-                    // Fallback - try en0 or eth0
                     defaultInterface = "en0";
+                    System.Diagnostics.Debug.WriteLine($"[TUN NAT] fallback to en0");
                 }
 
                 // Check pfctl status
                 string pfStatus = CommandHelper.Osx(string.Empty, new string[] { "sudo pfctl -s info" });
+                System.Diagnostics.Debug.WriteLine($"[TUN NAT] pfctl status: {pfStatus.Substring(0, Math.Min(pfStatus.Length, 300))}");
 
                 // Basic NAT rules
                 string pfRules = $@"# VPN NAT Rules
@@ -303,10 +329,15 @@ pass inet proto icmp all
                     "sudo pfctl -e"
                 }, out error);
 
+                System.Diagnostics.Debug.WriteLine($"[TUN NAT] pfctl -f result ({pfResult.Length} chars): {pfResult.Substring(0, Math.Min(pfResult.Length, 300))}");
+                if (!string.IsNullOrEmpty(error))
+                    System.Diagnostics.Debug.WriteLine($"[TUN NAT] pfctl stderr: {error.Substring(0, Math.Min(error.Length, 300))}");
+
                 try { File.Delete(tempFile); } catch { }
 
                 // Verify pfctl state
                 string rules = CommandHelper.Osx(string.Empty, new string[] { "sudo pfctl -s nat" });
+                System.Diagnostics.Debug.WriteLine($"[TUN NAT] pfctl -s nat: {rules.Substring(0, Math.Min(rules.Length, 300))}");
             }
             catch (Exception ex)
             {
@@ -432,6 +463,9 @@ pass inet proto icmp all
         // Largest standard frame: AF_BE(4) + max IP packet (65KB).
         private readonly byte[] writeBuffer = new byte[4 + 65 * 1024];
 
+        [DllImport("libSystem.dylib", SetLastError = true)]
+        private static extern IntPtr write(int fd, byte[] buf, IntPtr count);
+
         public byte[] Read(out int length)
         {
             length = 0;
@@ -444,12 +478,15 @@ pass inet proto icmp all
             // AF header BIG-ENDIAN
             uint af = BinaryPrimitives.ReadUInt32BigEndian(buffer.AsSpan(0, 4));
             if (af != 2u && af != 30u)  // AF_INET=2, AF_INET6=30
+            {
+                System.Diagnostics.Debug.WriteLine($"[TUN Read] unexpected AF={af} n={n} if={interfaceMac}");
                 return Helper.EmptyArray;
+            }
 
             int payloadLen = n - 4;
+            System.Diagnostics.Debug.WriteLine($"[TUN Read] if={interfaceMac} af={(af==2u?"IPv4":"IPv6")} totalLen={n} payloadLen={payloadLen}");
 
             // Replace AF header with pipeline format: [LEN_LE(4) | IP]
-            // The IP payload is already at buffer+4, just overwrite the AF header at buffer+0
             BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(0, 4), payloadLen);
 
             length = payloadLen + 4;
@@ -458,7 +495,11 @@ pass inet proto icmp all
 
         public bool Write(ReadOnlyMemory<byte> packet)
         {
-            if (safeFileHandle == null || fsWrite == null) return false;
+            if (safeFileHandle == null || fsWrite == null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TUN Write] guard fail: safeFileHandle={safeFileHandle != null} fsWrite={fsWrite != null}");
+                return false;
+            }
 
             lock (writeLockObj)
             {
@@ -468,6 +509,10 @@ pass inet proto icmp all
                     if (span.Length < 1) return false;
 
                     ReadOnlySpan<byte> ipSpan;
+                    string format;
+                    int rawFd = (int)safeFileHandle.DangerousGetHandle();
+                    IntPtr written;
+                    int errno;
 
                     // 1) UTUN frame? (AF header big-endian: 0x00000002 or 0x0000001E)
                     if (span.Length >= 5)
@@ -475,9 +520,11 @@ pass inet proto icmp all
                         uint afBe = BinaryPrimitives.ReadUInt32BigEndian(span.Slice(0, 4));
                         if (afBe == 2u || afBe == 30u)
                         {
-                            // Already [AF_BE][IP] -> write directly
-                            fsWrite.Write(span);
-                            return true;
+                            format = "UTUN";
+                            written = write(rawFd, packet.ToArray(), (IntPtr)span.Length);
+                            errno = Marshal.GetLastWin32Error();
+                            System.Diagnostics.Debug.WriteLine($"[TUN Write] UTUN raw-write fd={rawFd} len={span.Length} -> wrote={(long)written} errno={errno}");
+                            return written != IntPtr.Zero;
                         }
                     }
 
@@ -485,11 +532,13 @@ pass inet proto icmp all
                     byte v = (byte)(span[0] >> 4);
                     if (v == 4 || v == 6)
                     {
+                        format = "rawIP";
                         ipSpan = span; // [IP]
                     }
                     else
                     {
                         // 3) [LEN_LE][IP] frame
+                        format = "LEN_LE";
                         if (span.Length < 5) return false;
                         int payloadLen = BinaryPrimitives.ReadInt32LittleEndian(span.Slice(0, 4));
                         if (payloadLen <= 0 || payloadLen > span.Length - 4) return false;
@@ -511,9 +560,11 @@ pass inet proto icmp all
                     BinaryPrimitives.WriteUInt32BigEndian(writeBuffer.AsSpan(0, 4), af);
                     ipSpan.CopyTo(writeBuffer.AsSpan(4));
 
-                    fsWrite.Write(writeBuffer, 0, frameLen);
-                    fsWrite.Flush();
-                    return true;
+                    System.Diagnostics.Debug.WriteLine($"[TUN Write] {format} v={v} ipLen={ipSpan.Length} frameLen={frameLen} af=0x{af:X8} if={interfaceMac} fd={rawFd}");
+                    written = write(rawFd, writeBuffer, (IntPtr)frameLen);
+                    errno = Marshal.GetLastWin32Error();
+                    System.Diagnostics.Debug.WriteLine($"[TUN Write] raw-write fd={rawFd} if={interfaceMac} frameLen={frameLen} -> wrote={(long)written} errno={errno}");
+                    return written != IntPtr.Zero;
                 }
                 catch (Exception ex)
                 {
