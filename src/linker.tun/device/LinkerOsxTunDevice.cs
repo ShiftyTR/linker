@@ -64,6 +64,7 @@ namespace linker.tun.device
             fsRead = new FileStream(safeFileHandle, FileAccess.Read, 65 * 1024, false);
             fsWrite = new FileStream(safeFileHandle, FileAccess.Write, 65 * 1024, false);
 
+            error = string.Empty;
             System.Diagnostics.Debug.WriteLine($"[TUN Setup] SUCCESS: {interfaceMac} running with {address}/{prefixLength}");
             return true;
         }
@@ -164,15 +165,10 @@ namespace linker.tun.device
                 if (!string.IsNullOrEmpty(error))
                     System.Diagnostics.Debug.WriteLine($"[TUN Config] commands stderr: {error.Substring(0, Math.Min(error.Length, 500))}");
 
-                // Ignore non-critical routing errors
-                if (!string.IsNullOrEmpty(error))
-                {
-                    if (!(!error.Contains("File exists") && !error.Contains("Network is unreachable") && !error.Contains("route: writing to routing socket")))
-                    {
-                        // Continue for non-critical issues
-                        error = string.Empty;
-                    }
-                }
+                // stderr here is diagnostic only (route/sysctl/ifconfig noise). Any non-empty error would be
+                // treated as a setup failure by LinkerTunDeviceAdapter and would silently stop the read loop,
+                // so the real verdict comes from the ifconfig verification below.
+                error = string.Empty;
 
                 // Verify interface is UP AND has the assigned IP address
                 result = CommandHelper.Osx(string.Empty, new string[] { $"ifconfig {interfaceMac}" });
@@ -473,7 +469,11 @@ pass inet proto icmp all
 
             // UTUN: [AF(4) | IP(...)]
             int n = fsRead.Read(buffer, 0, buffer.Length);
-            if (n < 5) return Helper.EmptyArray;
+            if (n < 5)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TUN Read] short read n={n} if={interfaceMac}");
+                return Helper.EmptyArray;
+            }
 
             // AF header BIG-ENDIAN
             uint af = BinaryPrimitives.ReadUInt32BigEndian(buffer.AsSpan(0, 4));
@@ -524,7 +524,7 @@ pass inet proto icmp all
                             written = write(rawFd, packet.ToArray(), (IntPtr)span.Length);
                             errno = Marshal.GetLastWin32Error();
                             System.Diagnostics.Debug.WriteLine($"[TUN Write] UTUN raw-write fd={rawFd} len={span.Length} -> wrote={(long)written} errno={errno}");
-                            return written != IntPtr.Zero;
+                            return (long)written == span.Length;
                         }
                     }
 
@@ -564,7 +564,7 @@ pass inet proto icmp all
                     written = write(rawFd, writeBuffer, (IntPtr)frameLen);
                     errno = Marshal.GetLastWin32Error();
                     System.Diagnostics.Debug.WriteLine($"[TUN Write] raw-write fd={rawFd} if={interfaceMac} frameLen={frameLen} -> wrote={(long)written} errno={errno}");
-                    return written != IntPtr.Zero;
+                    return (long)written == frameLen;
                 }
                 catch (Exception ex)
                 {
