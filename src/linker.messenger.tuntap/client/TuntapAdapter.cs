@@ -132,19 +132,26 @@ namespace linker.messenger.tuntap.client
         /// <returns></returns>
         private async Task CheckDevice()
         {
+            //必须先拿到锁再进try，否则未抢到锁的调用会在finally里把别人的锁释放掉，导致重启网卡的操作并发执行
+            if (checking.StartOperation() == false)
+            {
+                return;
+            }
             try
             {
-                if (checking.StartOperation() == false || SkipCheck)
+                if (SkipCheck)
                 {
                     return;
                 }
                 if (NeedRestart)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[TUN Check] NeedRestart status={tuntapTransfer.Status} changed={tuntapConfigTransfer.Changed} -> restarting device");
                     await RetstartDevice().ConfigureAwait(false);
                     return;
                 }
                 if (await tuntapTransfer.CheckAvailable(tuntapConfigTransfer.Info.InterfaceOrder).ConfigureAwait(false) == false)
                 {
+                    System.Diagnostics.Debug.WriteLine($"[TUN Check] CheckAvailable false -> refreshing device");
                     tuntapTransfer.Refresh();
                 }
             }

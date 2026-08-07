@@ -308,9 +308,11 @@ namespace linker.tunnel.connection
             if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
                 LoggerHelper.Instance.Error($"tunnel connection {this.GetHashCode()} writer offline {ToString()}");
 
-            callback?.Closed(this, userToken);
-            callback = null;
+            //Recver/ProcessWrite的finally和外部主动释放会并发进来，Closed只能回调一次
+            ITunnelConnectionReceiveCallback _callback = Interlocked.Exchange(ref callback, null);
+            object _userToken = userToken;
             userToken = null;
+            _callback?.Closed(this, _userToken);
             cts?.Cancel();
 
             Stream?.Close();
@@ -325,7 +327,6 @@ namespace linker.tunnel.connection
             }
             catch (Exception)
             { }
-            GC.Collect();
 
         }
         public override string ToString()

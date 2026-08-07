@@ -1,4 +1,5 @@
 ﻿using linker.libs;
+using linker.libs.timer;
 using linker.messenger.channel;
 using linker.messenger.pcp;
 using linker.messenger.signin;
@@ -9,6 +10,7 @@ using linker.tunnel;
 using linker.tunnel.connection;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Net;
 
 namespace linker.messenger.tuntap.client
 {
@@ -45,6 +47,15 @@ namespace linker.messenger.tuntap.client
             this.tuntapCidrConnectionManager = tuntapCidrConnectionManager;
             this.tuntapCidrDecenterManager = tuntapCidrDecenterManager;
             this.tuntapDecenter = tuntapDecenter;
+
+            TimerHelper.SetIntervalLong(() =>
+            {
+                foreach (ITunnelConnection item in Connections.Values)
+                {
+                    if (item == null) continue;
+                    System.Diagnostics.Debug.WriteLine($"[Chan stat] #{item.GetHashCode()} {item.RemoteMachineId} {item.TransportName}/{item.Type} connected={item.Connected} delay={item.Delay} recv={item.ReceiveBytes} send={item.SendBytes} recvBuf={item.RecvBufferRemaining} sendBuf={item.SendBufferRemaining} lastTicks={item.LastTicks.Diff()}ms");
+                }
+            }, 30000);
         }
 
         protected override void Connected(ITunnelConnection connection)
@@ -76,6 +87,10 @@ namespace linker.messenger.tuntap.client
         /// <returns></returns>
         public async Task Closed(ITunnelConnection connection, object state)
         {
+            System.Diagnostics.Debug.WriteLine($"[Chan] -conn CLOSED #{connection?.GetHashCode()} {connection?.RemoteMachineId} {connection?.TransportName}/{connection?.Type}");
+            //连接已释放，Connected 在释放后仍可能短暂为true，必须立刻从缓存移除，否则数据包会一直发往已释放的连接
+            RemoveConnection(connection);
+            tuntapCidrConnectionManager.Remove(connection);
             await Callback.Close(connection).ConfigureAwait(false);
             Version.Increment();
         }
@@ -101,6 +116,8 @@ namespace linker.messenger.tuntap.client
                 await connection.SendAsync(packet.Buffer, packet.Offset, packet.Length).ConfigureAwait(false);
                 return;
             }
+
+            System.Diagnostics.Debug.WriteLine($"[TUN Out] dst={new IPAddress(packet.DstIp.Span[^4..].ToArray())} len={packet.Length} -> NO CONNECTION (found={connection != null} connected={connection?.Connected}), queued + connecting");
 
             //隧道尚未建立，先把数据包缓存起来，连接就绪后补发，避免首批ping丢包
             EnqueuePending(ip, packet.Buffer, packet.Offset, packet.Length);

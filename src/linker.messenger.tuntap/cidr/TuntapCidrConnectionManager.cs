@@ -43,6 +43,18 @@ namespace linker.messenger.tuntap.cidr
             }
             Version.Increment();
         }
+        /// <summary>
+        /// 移除已关闭的连接，只删除仍指向该实例的映射，避免误删已经顶替上来的新连接
+        /// </summary>
+        public void Remove(ITunnelConnection connection)
+        {
+            if (connection == null) return;
+            foreach (var item in connections.Where(c => c.Value.Equals(connection)).ToList())
+            {
+                connections.TryRemove(new KeyValuePair<uint, ITunnelConnection>(item.Key, item.Value));
+            }
+            Version.Increment();
+        }
         public void RemoveNotMachine(uint ip, string machineId)
         {
             if (connections.TryGetValue(ip, out ITunnelConnection connection) && machineId != connection.RemoteMachineId)

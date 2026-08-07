@@ -287,7 +287,10 @@ namespace linker.tunnel.connection
         {
             if (SSL)
             {
-                Crypto.TryDecode(data.Span, cryptoDecodeBuffer, out int bytesWritten);
+                if (Crypto.TryDecode(data.Span, cryptoDecodeBuffer, out int bytesWritten) == false)
+                {
+                    return Task.CompletedTask;
+                }
                 data = cryptoDecodeBuffer.AsMemory(0, bytesWritten);
             }
             return CallbackPacket(data);
@@ -340,7 +343,11 @@ namespace linker.tunnel.connection
 
                     if (SSL)
                     {
-                        Crypto.TryDecode(packet.Span, cryptoDecodeBuffer, out int _bytesWritten);
+                        if (Crypto.TryDecode(packet.Span, cryptoDecodeBuffer, out int _bytesWritten) == false)
+                        {
+                            packets = packets.Slice(sizeof(int) + packetLength);
+                            continue;
+                        }
                         packet = cryptoDecodeBuffer.AsMemory(0, _bytesWritten);
                     }
                     await CallbackPacket(packet).ConfigureAwait(false);
@@ -403,17 +410,16 @@ namespace linker.tunnel.connection
                     UdpClient?.SafeClose();
 
                 cts?.Cancel();
-                callback?.Closed(this, userToken);
-                callback = null;
+                ITunnelConnectionReceiveCallback _callback = Interlocked.Exchange(ref callback, null);
+                object _userToken = userToken;
                 userToken = null;
+                _callback?.Closed(this, _userToken);
 
                 Crypto?.Dispose();
 
                 fecEncoder?.Dispose();
                 fecDecoder?.Dispose();
                 stickyEncoder?.Dispose();
-
-                GC.Collect();
             });
         }
         public override string ToString()

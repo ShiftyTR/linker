@@ -64,6 +64,44 @@ namespace linker.messenger.channel
                 }
             }
         }
+        /// <summary>
+        /// 移除已关闭的连接，仅当缓存中仍是同一个实例时才移除，避免误删已经顶替上来的新连接
+        /// </summary>
+        public void Remove(ITunnelConnection connection)
+        {
+            if (connection == null) return;
+            if (Connections.TryGetValue(connection.TransactionId, out ConcurrentDictionary<string, ITunnelConnection> _connections) == false) return;
+            if (_connections.TryGetValue(connection.RemoteMachineId, out ITunnelConnection _connection) && _connection.Equals(connection))
+            {
+                _connections.TryRemove(new KeyValuePair<string, ITunnelConnection>(connection.RemoteMachineId, _connection));
+                Version.Increment();
+
+                //顶替上来的连接死了，把它顶替掉的那个还活着的旧连接放回去，避免出现无连接的空档
+                if (fallbacks.TryRemove(FallbackKey(connection), out ITunnelConnection fallback)
+                    && fallback.Equals(connection) == false && fallback.Connected)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Chan] restore FALLBACK #{fallback.GetHashCode()} {fallback.TransportName}/{fallback.Type} after #{connection.GetHashCode()} {connection.TransportName}/{connection.Type} closed");
+                    Add(fallback);
+                }
+            }
+        }
+
+        private readonly ConcurrentDictionary<string, ITunnelConnection> fallbacks = new();
+        private static string FallbackKey(ITunnelConnection connection) => $"{connection.TransactionId}@{connection.RemoteMachineId}";
+
+        /// <summary>
+        /// 记录 connection 顶替掉的旧连接，旧连接仍然可用时可以在新连接断开后顶回来
+        /// </summary>
+        public void SetFallback(ITunnelConnection connection, ITunnelConnection fallback)
+        {
+            if (connection == null || fallback == null) return;
+            fallbacks[FallbackKey(connection)] = fallback;
+        }
+        public void ClearFallback(ITunnelConnection connection)
+        {
+            if (connection == null) return;
+            fallbacks.TryRemove(FallbackKey(connection), out _);
+        }
     }
 
     public class Channel
@@ -101,6 +139,10 @@ namespace linker.messenger.channel
         protected virtual void Connected(ITunnelConnection connection)
         {
         }
+        protected void RemoveConnection(ITunnelConnection connection)
+        {
+            channelConnectionCaching.Remove(connection);
+        }
         private void OnConnected(ITunnelConnection connection)
         {
             if (connection == null) return;
@@ -111,6 +153,8 @@ namespace linker.messenger.channel
             channelConnectionCaching.TryGetValue(connection.RemoteMachineId, TransactionId, out ITunnelConnection connectionOld);
             bool replacingOld = connectionOld != null && connection.Equals(connectionOld) == false;
 
+            System.Diagnostics.Debug.WriteLine($"[Chan] +conn #{connection.GetHashCode()} {connection.RemoteMachineId} {connection.TransportName}/{connection.Type} | old=#{connectionOld?.GetHashCode()} {connectionOld?.TransportName}/{connectionOld?.Type} replacing={replacingOld}");
+
             pcpTransfer.AddConnection(connection);
             connection = channelConnectionCaching.Add(connection);
             Version.Increment();
@@ -118,26 +162,56 @@ namespace linker.messenger.channel
             //升级到P2P时，确认新连接稳定后再释放旧的中继连接，避免P2P瞬断后无中继可用造成抖动
             if (replacingOld)
             {
-                ITunnelConnection oldToDispose = connectionOld;
-                ITunnelConnection newConnection = connection;
-                TimerHelper.SetTimeout(() =>
-                {
-                    //新连接仍然有效才释放旧连接；否则回退到旧中继，避免连接中断
-                    if (channelConnectionCaching.TryGetValue(newConnection.RemoteMachineId, TransactionId, out ITunnelConnection current)
-                        && current.Equals(newConnection) && newConnection.Connected)
-                    {
-                        try { oldToDispose.Dispose(); } catch (Exception) { }
-                    }
-                    else if (oldToDispose.Connected)
-                    {
-                        channelConnectionCaching.Add(oldToDispose);
-                        Version.Increment();
-                    }
-                }, 5000);
+                channelConnectionCaching.SetFallback(connection, connectionOld);
+                VerifyReplace(connectionOld, connection, 0);
             }
 
             Connected(connection);
             Add(connection);
+        }
+
+        private const int replaceVerifyTimes = 6;
+        /// <summary>
+        /// 顶替上来的新连接必须真的收发通了才能释放旧连接，握手成功但打洞实际不通的P2P会让流量黑洞60秒
+        /// </summary>
+        private void VerifyReplace(ITunnelConnection oldConnection, ITunnelConnection newConnection, int times)
+        {
+            TimerHelper.SetTimeout(() =>
+            {
+                //中继连接不得释放被它顶替的P2P连接，否则会把可用的P2P也一起丢掉
+                bool isDowngrade = oldConnection.Type == TunnelType.P2P && newConnection.Type != TunnelType.P2P;
+                bool isCurrent = channelConnectionCaching.TryGetValue(newConnection.RemoteMachineId, TransactionId, out ITunnelConnection current) && current.Equals(newConnection);
+                //Connected 只表示60秒内有过数据，实际不通的连接也是true，必须看收发字节和最近活动
+                bool alive = newConnection.Connected && newConnection.SendBytes > 0 && newConnection.ReceiveBytes > 0 && newConnection.LastTicks.DiffLessEqual(15000);
+
+                if (isDowngrade || isCurrent == false)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Chan] keep OLD #{oldConnection.GetHashCode()} {oldConnection.TransportName}/{oldConnection.Type} downgrade={isDowngrade} current={isCurrent}");
+                    return;
+                }
+                if (alive)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Chan] promote NEW #{newConnection.GetHashCode()} {newConnection.TransportName}/{newConnection.Type}, dispose OLD #{oldConnection.GetHashCode()} {oldConnection.TransportName}/{oldConnection.Type}");
+                    channelConnectionCaching.ClearFallback(newConnection);
+                    try { oldConnection.Dispose(); } catch (Exception) { }
+                    return;
+                }
+                if (times + 1 < replaceVerifyTimes)
+                {
+                    VerifyReplace(oldConnection, newConnection, times + 1);
+                    return;
+                }
+
+                System.Diagnostics.Debug.WriteLine($"[Chan] rollback to OLD #{oldConnection.GetHashCode()} {oldConnection.TransportName}/{oldConnection.Type} (NEW #{newConnection.GetHashCode()} {newConnection.TransportName}/{newConnection.Type} recv={newConnection.ReceiveBytes} send={newConnection.SendBytes} idle={newConnection.LastTicks.Diff()}ms) oldConnected={oldConnection.Connected}");
+                channelConnectionCaching.ClearFallback(newConnection);
+                if (oldConnection.Connected)
+                {
+                    channelConnectionCaching.Add(oldConnection);
+                    Connected(oldConnection);
+                    Add(oldConnection);
+                }
+                try { newConnection.Dispose(); } catch (Exception) { }
+            }, 5000);
         }
 
         protected async ValueTask<ITunnelConnection> ConnectTunnel(string machineId, TunnelProtocolType denyProtocols)
@@ -151,12 +225,15 @@ namespace linker.messenger.channel
             //开始失败，说明在操作中。不阻塞数据包线程，后台建立中继+打洞
             if (operatingMultipleManager.StartOperation($"{machineId}@{TransactionId}") == false)
             {
+                System.Diagnostics.Debug.WriteLine($"[Chan] connect {machineId} SKIPPED (already operating)");
                 return null;
             }
+            System.Diagnostics.Debug.WriteLine($"[Chan] connect {machineId} START relay+p2p");
             _ = RelayAndP2P(machineId, denyProtocols).ContinueWith((result) =>
             {
                 operatingMultipleManager.StopOperation($"{machineId}@{TransactionId}");
-                if (result.Result != null)
+                System.Diagnostics.Debug.WriteLine($"[Chan] connect {machineId} DONE status={result.Status} result=#{(result.IsCompletedSuccessfully ? result.Result?.GetHashCode() : null)}");
+                if (result.IsCompletedSuccessfully && result.Result != null)
                 {
                     channelConnectionCaching.Add(result.Result);
                 }

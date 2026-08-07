@@ -92,6 +92,14 @@ namespace linker.tunnel.connection
                 if (offset > decodeBuffer.Length || packetCount > maxDecodePacketCount)
                 {
                     offset -= 4 + packetLength;
+                    if (offset == 0)
+                    {
+                        //单个包比解码缓冲区还大，单独拷一份返回，否则 consumed/examined 都不前进，接收循环会死循环空转并占死一个线程池线程
+                        byte[] single = result.Buffer.Slice(0, 4 + packetLength).ToArray();
+                        Advance(single.Length);
+                        pipe.Reader.AdvanceTo(result.Buffer.GetPosition(single.Length));
+                        return single;
+                    }
                     examined = result.Buffer.GetPosition(offset);
                     break;
                 }
@@ -118,8 +126,6 @@ namespace linker.tunnel.connection
             { }
 
             packetDst?.Dispose();
-
-            GC.Collect();
         }
     }
 }

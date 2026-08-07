@@ -379,8 +379,6 @@ namespace linker.tun
         /// <returns></returns>
         public async ValueTask<bool> Write(string srcId, ReadOnlyMemory<byte> buffer)
         {
-            System.Diagnostics.Debug.WriteLine($"TUN Write called: srcId={srcId} len={buffer.Length}");
-
             uint dstIp = VerifyPacket(buffer, out int ipOffset);
 
             if (Status != LinkerTunDeviceStatus.Running)

@@ -190,7 +190,16 @@ namespace linker.libs
             Span<byte> plaintextDest = destination.Slice(0, ciphertext.Length);
             //lock (this)
             {
-                aesGcmDecode.Decrypt(nonce, ciphertext, tag, plaintextDest, ReadOnlySpan<byte>.Empty);
+                try
+                {
+                    aesGcmDecode.Decrypt(nonce, ciphertext, tag, plaintextDest, ReadOnlySpan<byte>.Empty);
+                }
+                catch (CryptographicException)
+                {
+                    //UDP端口上收到别的对端的打洞探测包、旧NAT映射的残包、扫描包都会校验失败，属于正常情况，丢弃即可
+                    bytesWritten = 0;
+                    return false;
+                }
             }
 
             bytesWritten = ciphertext.Length;

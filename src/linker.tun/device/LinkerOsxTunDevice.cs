@@ -18,9 +18,8 @@ namespace linker.tun.device
         public bool Running => safeFileHandle != null;
 
         private string interfaceMac = string.Empty;
-        private FileStream fsRead = null;
-        private FileStream fsWrite = null;
         private SafeFileHandle safeFileHandle;
+        private int rawFd = -1;
         private IPAddress address;
         private byte prefixLength = 24;
         private int tunUnit = -1;
@@ -60,9 +59,6 @@ namespace linker.tun.device
                 Shutdown();
                 return false;
             }
-
-            fsRead = new FileStream(safeFileHandle, FileAccess.Read, 65 * 1024, false);
-            fsWrite = new FileStream(safeFileHandle, FileAccess.Write, 65 * 1024, false);
 
             error = string.Empty;
             System.Diagnostics.Debug.WriteLine($"[TUN Setup] SUCCESS: {interfaceMac} running with {address}/{prefixLength}");
@@ -106,6 +102,7 @@ namespace linker.tun.device
 
                     // Create SafeFileHandle
                     safeFileHandle = new SafeFileHandle(new IntPtr(fd), true);
+                    rawFd = fd;
 
                     return true;
                 }
@@ -211,6 +208,7 @@ namespace linker.tun.device
 
         public void Shutdown()
         {
+            System.Diagnostics.Debug.WriteLine($"[TUN Shutdown] if={interfaceMac} fd={Volatile.Read(ref rawFd)}");
             try
             {
                 if (!string.IsNullOrEmpty(interfaceMac))
@@ -219,16 +217,12 @@ namespace linker.tun.device
                     CommandHelper.Osx(string.Empty, new string[] { $"sudo ifconfig {interfaceMac} down" });
                 }
 
+                // utun is a kernel-control socket: close() alone does not wake a thread parked in read().
+                int fd = Interlocked.Exchange(ref rawFd, -1);
+                if (fd >= 0) shutdown(fd, SHUT_RDWR);
+
                 safeFileHandle?.Dispose();
                 safeFileHandle = null;
-
-                try { fsRead?.Flush(); } catch (Exception) { }
-                try { fsRead?.Close(); fsRead?.Dispose(); } catch (Exception) { }
-                fsRead = null;
-
-                try { fsWrite?.Flush(); } catch (Exception) { }
-                try { fsWrite?.Close(); fsWrite?.Dispose(); } catch (Exception) { }
-                fsWrite = null;
             }
             catch (Exception)
             {
@@ -242,6 +236,7 @@ namespace linker.tun.device
         public void Refresh()
         {
             if (safeFileHandle == null) return;
+            System.Diagnostics.Debug.WriteLine($"[TUN Refresh] ifconfig {interfaceMac} up");
             try
             {
                 CommandHelper.Osx(string.Empty, new string[] {
@@ -462,16 +457,84 @@ pass inet proto icmp all
         [DllImport("libSystem.dylib", SetLastError = true)]
         private static extern IntPtr write(int fd, byte[] buf, IntPtr count);
 
+        [DllImport("libSystem.dylib", SetLastError = true)]
+        private static extern IntPtr read(int fd, byte[] buf, IntPtr count);
+
+        [DllImport("libSystem.dylib", SetLastError = true)]
+        private static extern int poll([In, Out] PollFd[] fds, uint nfds, int timeout);
+
+        [DllImport("libSystem.dylib", SetLastError = true, EntryPoint = "shutdown")]
+        private static extern int shutdown(int fd, int how);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PollFd
+        {
+            public int fd;
+            public short events;
+            public short revents;
+        }
+
+        private const short POLLIN = 0x0001;
+        private const short POLLERR = 0x0008;
+        private const short POLLHUP = 0x0010;
+        private const short POLLNVAL = 0x0020;
+        private const int SHUT_RDWR = 2;
+        private const int EINTR = 4;
+
+        private readonly PollFd[] pollFds = new PollFd[1];
+        private int idlePolls;
+
         public byte[] Read(out int length)
         {
             length = 0;
-            if (safeFileHandle == null || fsRead == null) return Helper.EmptyArray;
+
+            // A blocking read() on the utun socket cannot be interrupted by close(), which would wedge the
+            // adapter's read loop forever across a Setup/Shutdown cycle. Poll with a timeout instead.
+            int fd;
+            while (true)
+            {
+                fd = Volatile.Read(ref rawFd);
+                if (fd < 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[TUN Read] fd closed (rawFd={fd}) if={interfaceMac}");
+                    return Helper.EmptyArray;
+                }
+
+                pollFds[0].fd = fd;
+                pollFds[0].events = POLLIN;
+                pollFds[0].revents = 0;
+
+                int ready = poll(pollFds, 1, 200);
+                if (ready < 0)
+                {
+                    if (Marshal.GetLastWin32Error() == EINTR) continue;
+                    System.Diagnostics.Debug.WriteLine($"[TUN Read] poll failed errno={Marshal.GetLastWin32Error()} fd={fd} if={interfaceMac}");
+                    return Helper.EmptyArray;
+                }
+                if (ready == 0)
+                {
+                    //空闲心跳，用来区分"读循环卡死"和"确实没有数据到达"
+                    if (++idlePolls >= 150)
+                    {
+                        idlePolls = 0;
+                        System.Diagnostics.Debug.WriteLine($"[TUN Read] idle 30s, loop alive fd={fd} if={interfaceMac}");
+                    }
+                    continue;
+                }
+                idlePolls = 0;
+                if ((pollFds[0].revents & (POLLERR | POLLHUP | POLLNVAL)) != 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[TUN Read] poll error revents=0x{pollFds[0].revents:X} fd={fd} if={interfaceMac}");
+                    return Helper.EmptyArray;
+                }
+                break;
+            }
 
             // UTUN: [AF(4) | IP(...)]
-            int n = fsRead.Read(buffer, 0, buffer.Length);
+            int n = (int)read(fd, buffer, (IntPtr)buffer.Length);
             if (n < 5)
             {
-                System.Diagnostics.Debug.WriteLine($"[TUN Read] short read n={n} if={interfaceMac}");
+                System.Diagnostics.Debug.WriteLine($"[TUN Read] short read n={n} errno={Marshal.GetLastWin32Error()} if={interfaceMac}");
                 return Helper.EmptyArray;
             }
 
@@ -484,7 +547,6 @@ pass inet proto icmp all
             }
 
             int payloadLen = n - 4;
-            System.Diagnostics.Debug.WriteLine($"[TUN Read] if={interfaceMac} af={(af==2u?"IPv4":"IPv6")} totalLen={n} payloadLen={payloadLen}");
 
             // Replace AF header with pipeline format: [LEN_LE(4) | IP]
             BinaryPrimitives.WriteInt32LittleEndian(buffer.AsSpan(0, 4), payloadLen);
@@ -495,9 +557,10 @@ pass inet proto icmp all
 
         public bool Write(ReadOnlyMemory<byte> packet)
         {
-            if (safeFileHandle == null || fsWrite == null)
+            int fd = Volatile.Read(ref rawFd);
+            if (fd < 0)
             {
-                System.Diagnostics.Debug.WriteLine($"[TUN Write] guard fail: safeFileHandle={safeFileHandle != null} fsWrite={fsWrite != null}");
+                System.Diagnostics.Debug.WriteLine($"[TUN Write] guard fail: device not open");
                 return false;
             }
 
@@ -510,7 +573,6 @@ pass inet proto icmp all
 
                     ReadOnlySpan<byte> ipSpan;
                     string format;
-                    int rawFd = (int)safeFileHandle.DangerousGetHandle();
                     IntPtr written;
                     int errno;
 
@@ -521,9 +583,8 @@ pass inet proto icmp all
                         if (afBe == 2u || afBe == 30u)
                         {
                             format = "UTUN";
-                            written = write(rawFd, packet.ToArray(), (IntPtr)span.Length);
+                            written = write(fd, packet.ToArray(), (IntPtr)span.Length);
                             errno = Marshal.GetLastWin32Error();
-                            System.Diagnostics.Debug.WriteLine($"[TUN Write] UTUN raw-write fd={rawFd} len={span.Length} -> wrote={(long)written} errno={errno}");
                             return (long)written == span.Length;
                         }
                     }
@@ -560,10 +621,12 @@ pass inet proto icmp all
                     BinaryPrimitives.WriteUInt32BigEndian(writeBuffer.AsSpan(0, 4), af);
                     ipSpan.CopyTo(writeBuffer.AsSpan(4));
 
-                    System.Diagnostics.Debug.WriteLine($"[TUN Write] {format} v={v} ipLen={ipSpan.Length} frameLen={frameLen} af=0x{af:X8} if={interfaceMac} fd={rawFd}");
-                    written = write(rawFd, writeBuffer, (IntPtr)frameLen);
+                    written = write(fd, writeBuffer, (IntPtr)frameLen);
                     errno = Marshal.GetLastWin32Error();
-                    System.Diagnostics.Debug.WriteLine($"[TUN Write] raw-write fd={rawFd} if={interfaceMac} frameLen={frameLen} -> wrote={(long)written} errno={errno}");
+                    if ((long)written != frameLen)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[TUN Write] {format} raw-write fd={fd} if={interfaceMac} frameLen={frameLen} -> wrote={(long)written} errno={errno}");
+                    }
                     return (long)written == frameLen;
                 }
                 catch (Exception ex)
