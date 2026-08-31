@@ -237,7 +237,7 @@ namespace linker.messenger.entry
             }
             catch (Exception ex)
             {
-                var a = ex;
+                throw new InvalidOperationException("Linker messenger setup failed.", ex);
             }
             
             
