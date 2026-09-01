@@ -1,5 +1,7 @@
 ﻿using linker.libs;
+#if !LINKER_VPN_CLIENT_ONLY
 using linker.libs.web;
+#endif
 using linker.messenger.exroute;
 using linker.messenger.signin.args;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,7 +21,9 @@ namespace linker.messenger.signin
             serviceCollection.AddSingleton<SignInClientState>();
             serviceCollection.AddSingleton<SignInClientTransfer>();
 
+#if !LINKER_VPN_CLIENT_ONLY
             serviceCollection.AddSingleton<SignInApiController>();
+#endif
 
             serviceCollection.AddSingleton<SignInExRoute>();
 
@@ -38,10 +42,12 @@ namespace linker.messenger.signin
                 serviceProvider.GetService<SignInArgsUserIdClient>(),
             });
 
+#if !LINKER_VPN_CLIENT_ONLY
             linker.messenger.api.IWebServer apiServer = serviceProvider.GetService<linker.messenger.api.IWebServer>();
             apiServer.AddPlugins(new List<IApiController> {
                 serviceProvider.GetService<SignInApiController>()
             });
+#endif
 
             IMessengerResolver messengerResolver = serviceProvider.GetService<IMessengerResolver>();
             messengerResolver.AddMessenger(new List<IMessenger> { serviceProvider.GetService<SignInClientMessenger>() });

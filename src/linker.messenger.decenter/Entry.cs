@@ -1,4 +1,6 @@
-﻿using linker.libs.web;
+﻿#if !LINKER_VPN_CLIENT_ONLY
+using linker.libs.web;
+#endif
 using Microsoft.Extensions.DependencyInjection;
 namespace linker.messenger.decenter
 {
@@ -11,7 +13,9 @@ namespace linker.messenger.decenter
             serviceCollection.AddSingleton<DecenterClientMessenger>();
 
             serviceCollection.AddSingleton<CounterDecenter>();
+#if !LINKER_VPN_CLIENT_ONLY
             serviceCollection.AddSingleton<DecenterApiController>();
+#endif
 
             return serviceCollection;
         }
@@ -23,8 +27,10 @@ namespace linker.messenger.decenter
             IMessengerResolver messengerResolver = serviceProvider.GetService<IMessengerResolver>();
             messengerResolver.AddMessenger(new List<IMessenger> { serviceProvider.GetService<DecenterClientMessenger>() });
 
+#if !LINKER_VPN_CLIENT_ONLY
             linker.messenger.api.IWebServer apiServer = serviceProvider.GetService<linker.messenger.api.IWebServer>();
             apiServer.AddPlugins(new List<IApiController> { serviceProvider.GetService<DecenterApiController>() });
+#endif
 
             return serviceProvider;
         }

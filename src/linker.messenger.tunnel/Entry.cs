@@ -4,7 +4,9 @@ using linker.tunnel;
 using Microsoft.Extensions.DependencyInjection;
 using linker.messenger.signin.args;
 using linker.messenger.sync;
+#if !LINKER_VPN_CLIENT_ONLY
 using linker.libs.web;
+#endif
 using linker.messenger.tunnel.server;
 using linker.messenger.tunnel.client;
 namespace linker.messenger.tunnel
@@ -22,7 +24,9 @@ namespace linker.messenger.tunnel
 
             serviceCollection.AddSingleton<TunnelDecenter>();
 
+#if !LINKER_VPN_CLIENT_ONLY
             serviceCollection.AddSingleton<TunnelApiController>();
+#endif
 
             serviceCollection.AddSingleton<TunnelExRoute>();
 
@@ -51,8 +55,10 @@ namespace linker.messenger.tunnel
             DecenterClientTransfer decenterClientTransfer = serviceProvider.GetService<DecenterClientTransfer>();
             decenterClientTransfer.AddDecenters(new List<IDecenter> { serviceProvider.GetService<TunnelDecenter>() });
 
+#if !LINKER_VPN_CLIENT_ONLY
             linker.messenger.api.IWebServer apiServer = serviceProvider.GetService<linker.messenger.api.IWebServer>();
             apiServer.AddPlugins(new List<IApiController> { serviceProvider.GetService<TunnelApiController>() });
+#endif
 
 
             ExRouteTransfer exRouteTransfer = serviceProvider.GetService<ExRouteTransfer>();

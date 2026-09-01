@@ -1,6 +1,8 @@
 ﻿using linker.libs;
 using linker.libs.extends;
+#if !LINKER_VPN_CLIENT_ONLY
 using linker.libs.web;
+#endif
 using linker.messenger.decenter;
 using linker.messenger.exroute;
 using linker.messenger.signin;
@@ -21,7 +23,9 @@ namespace linker.messenger.tuntap
     {
         public static ServiceCollection AddTuntapClient(this ServiceCollection serviceCollection)
         {
+#if !LINKER_VPN_CLIENT_ONLY
             serviceCollection.AddSingleton<TuntapApiController>();
+#endif
             serviceCollection.AddSingleton<LinkerTunDeviceAdapter>();
             serviceCollection.AddSingleton<TuntapTransfer>();
             serviceCollection.AddSingleton<TuntapProxy>();
@@ -67,8 +71,10 @@ namespace linker.messenger.tuntap
             IMessengerResolver messengerResolver = serviceProvider.GetService<IMessengerResolver>();
             messengerResolver.AddMessenger(new List<IMessenger> { serviceProvider.GetService<TuntapClientMessenger>() });
 
+#if !LINKER_VPN_CLIENT_ONLY
             linker.messenger.api.IWebServer apiServer = serviceProvider.GetService<linker.messenger.api.IWebServer>();
             apiServer.AddPlugins(new List<IApiController> { serviceProvider.GetService<TuntapApiController>() });
+#endif
 
             ExRouteTransfer exRouteTransfer = serviceProvider.GetService<ExRouteTransfer>();
             exRouteTransfer.AddExRoutes(new List<IExRoute> { serviceProvider.GetService<TuntapExRoute>() });

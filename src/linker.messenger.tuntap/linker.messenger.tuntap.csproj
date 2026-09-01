@@ -36,12 +36,21 @@
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\linker.messenger.access\linker.messenger.access.csproj" />
-	  <ProjectReference Include="..\linker.messenger.api\linker.messenger.api.csproj" />
+	  <ProjectReference Include="..\linker.messenger.access\linker.messenger.access.csproj" Condition="'$(LinkerVpnClientOnly)' != 'true'" />
+	  <ProjectReference Include="..\linker.messenger.api\linker.messenger.api.csproj" Condition="'$(LinkerVpnClientOnly)' != 'true'" />
 	  <ProjectReference Include="..\linker.messenger.channel\linker.messenger.channel.csproj" />
 	  <ProjectReference Include="..\linker.messenger.decenter\linker.messenger.decenter.csproj" />
 	  <ProjectReference Include="..\linker.messenger.exroute\linker.messenger.exroute.csproj" />
 	  <ProjectReference Include="..\linker.messenger\linker.messenger.csproj" />
 	  <ProjectReference Include="..\linker.tun\linker.tun.csproj" />
 	</ItemGroup>
+	<PropertyGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<DefineConstants>$(DefineConstants);LINKER_VPN_CLIENT_ONLY</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<Compile Remove="client\TuntapApiController.cs" />
+	</ItemGroup>
+	<ItemDefinitionGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<ProjectReference AdditionalProperties="LinkerVpnClientOnly=true" />
+	</ItemDefinitionGroup>
 </Project>

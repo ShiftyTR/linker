@@ -1,0 +1,1548 @@
+{
+  "format": 1,
+  "restore": {
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.fec\\linker.fec.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\linker.messenger.channel.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.firewall\\linker.messenger.firewall.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\linker.messenger.pcp.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\linker.messenger.relay.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\linker.messenger.tunnel.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tuntap\\linker.messenger.tuntap.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.vpn.client\\linker.messenger.vpn.client.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\linker.nat.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj": {},
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.upnp\\linker.upnp.csproj": {}
+  },
+  "projects": {
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.fec\\linker.fec.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.fec\\linker.fec.csproj",
+        "projectName": "linker.fec",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.fec\\linker.fec.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.fec\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj",
+        "projectName": "linker.libs",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\linker.messenger.channel.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\linker.messenger.channel.csproj",
+        "projectName": "linker.messenger.channel",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\linker.messenger.channel.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\linker.messenger.pcp.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\linker.messenger.pcp.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\linker.messenger.relay.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\linker.messenger.relay.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\linker.messenger.tunnel.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\linker.messenger.tunnel.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj",
+        "projectName": "linker.messenger.decenter",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj",
+        "projectName": "linker.messenger.exroute",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.firewall\\linker.messenger.firewall.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.firewall\\linker.messenger.firewall.csproj",
+        "projectName": "linker.messenger.firewall",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.firewall\\linker.messenger.firewall.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.firewall\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\linker.nat.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\linker.nat.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\linker.messenger.pcp.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\linker.messenger.pcp.csproj",
+        "projectName": "linker.messenger.pcp",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\linker.messenger.pcp.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\linker.messenger.relay.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\linker.messenger.relay.csproj",
+        "projectName": "linker.messenger.relay",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\linker.messenger.relay.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.Caching.Memory": {
+              "target": "Package",
+              "version": "[9.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj",
+        "projectName": "linker.messenger.signin",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj",
+        "projectName": "linker.messenger.sync",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\linker.messenger.tunnel.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\linker.messenger.tunnel.csproj",
+        "projectName": "linker.messenger.tunnel",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\linker.messenger.tunnel.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tuntap\\linker.messenger.tuntap.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tuntap\\linker.messenger.tuntap.csproj",
+        "projectName": "linker.messenger.tuntap",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tuntap\\linker.messenger.tuntap.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tuntap\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\linker.messenger.channel.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\linker.messenger.channel.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.vpn.client\\linker.messenger.vpn.client.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.vpn.client\\linker.messenger.vpn.client.csproj",
+        "projectName": "linker.messenger.vpn.client",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.vpn.client\\linker.messenger.vpn.client.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.vpn.client\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\linker.messenger.channel.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.channel\\linker.messenger.channel.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.decenter\\linker.messenger.decenter.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.exroute\\linker.messenger.exroute.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.firewall\\linker.messenger.firewall.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.firewall\\linker.messenger.firewall.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\linker.messenger.pcp.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.pcp\\linker.messenger.pcp.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\linker.messenger.relay.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.relay\\linker.messenger.relay.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.signin\\linker.messenger.signin.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.sync\\linker.messenger.sync.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\linker.messenger.tunnel.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tunnel\\linker.messenger.tunnel.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tuntap\\linker.messenger.tuntap.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger.tuntap\\linker.messenger.tuntap.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "MemoryPack": {
+              "target": "Package",
+              "version": "[1.21.3, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj",
+        "projectName": "linker.messenger",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\linker.messenger.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.messenger\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.Extensions.DependencyInjection": {
+              "target": "Package",
+              "version": "[8.0.1, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\linker.nat.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\linker.nat.csproj",
+        "projectName": "linker.nat",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\linker.nat.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "System.IO.Pipelines": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj",
+        "projectName": "linker.tunnel",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\linker.tunnel.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tunnel\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.fec\\linker.fec.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.fec\\linker.fec.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.upnp\\linker.upnp.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.upnp\\linker.upnp.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "System.IO.Pipelines": {
+              "target": "Package",
+              "version": "[8.0.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj",
+        "projectName": "linker.tun",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\linker.tun.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.tun\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.libs\\linker.libs.csproj"
+              },
+              "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\linker.nat.csproj": {
+                "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.nat\\linker.nat.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.upnp\\linker.upnp.csproj": {
+      "version": "1.9.99",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.upnp\\linker.upnp.csproj",
+        "projectName": "linker.upnp",
+        "projectPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.upnp\\linker.upnp.csproj",
+        "packagesPath": "C:\\Users\\ferha\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\Linker\\src\\linker.upnp\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ferha\\source\\repos\\ExposeLocalhostNet\\NuGet.Config",
+          "C:\\Users\\ferha\\NuGet.Config",
+          "C:\\Users\\ferha\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files\\dotnet\\library-packs": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://api.nuget.org/v3/index.json": {},
+          "https://nuget.localtonet.com/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "framework": "net8.0",
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.400"
+      },
+      "frameworks": {
+        "net8.0": {
+          "framework": "net8.0",
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

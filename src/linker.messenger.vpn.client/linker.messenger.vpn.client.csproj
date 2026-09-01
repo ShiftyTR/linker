@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LinkerVpnClientOnly>true</LinkerVpnClientOnly>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MemoryPack" Version="1.21.3" />
+    <ProjectReference Include="..\linker.messenger\linker.messenger.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.channel\linker.messenger.channel.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.decenter\linker.messenger.decenter.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.exroute\linker.messenger.exroute.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.firewall\linker.messenger.firewall.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.pcp\linker.messenger.pcp.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.relay\linker.messenger.relay.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.signin\linker.messenger.signin.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.sync\linker.messenger.sync.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.tunnel\linker.messenger.tunnel.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.messenger.tuntap\linker.messenger.tuntap.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+    <ProjectReference Include="..\linker.tun\linker.tun.csproj" AdditionalProperties="LinkerVpnClientOnly=true" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\linker.messenger.serializer.memorypack\MemoryPackSerializer.cs" Link="Serialization\MemoryPackSerializer.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\IPAddressFormatter.cs" Link="Serialization\IPAddressFormatter.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\IPEndPointFormatter.cs" Link="Serialization\IPEndPointFormatter.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\ConnectionFormatter.cs" Link="Serialization\ConnectionFormatter.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\TunnelConnectionFormatter.cs" Link="Serialization\TunnelConnectionFormatter.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\DecenterSerializer.cs" Link="Serialization\DecenterSerializer.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\SyncSerializer.cs" Link="Serialization\SyncSerializer.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\TunnelSerializer.cs" Link="Serialization\TunnelSerializer.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\TuntapSerializer.cs" Link="Serialization\TuntapSerializer.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\FirewallSerializer.cs" Link="Serialization\FirewallSerializer.cs" />
+  </ItemGroup>
+</Project>

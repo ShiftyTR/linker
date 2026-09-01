@@ -44,5 +44,14 @@
 		<ProjectReference Include="..\linker.messenger\linker.messenger.csproj" />
 		<ProjectReference Include="..\linker.tunnel\linker.tunnel.csproj" />
 	</ItemGroup>
+	<PropertyGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<DefineConstants>$(DefineConstants);LINKER_VPN_CLIENT_ONLY</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<Compile Remove="client\TunnelApiController.cs" />
+	</ItemGroup>
+	<ItemDefinitionGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<ProjectReference AdditionalProperties="LinkerVpnClientOnly=true" />
+	</ItemDefinitionGroup>
 
 </Project>

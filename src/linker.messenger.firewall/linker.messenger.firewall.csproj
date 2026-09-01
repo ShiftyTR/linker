@@ -37,14 +37,26 @@
 		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\linker.messenger.api\linker.messenger.api.csproj" />
-	  <ProjectReference Include="..\linker.messenger.forward\linker.messenger.forward.csproj" />
+	  <ProjectReference Include="..\linker.messenger.decenter\linker.messenger.decenter.csproj" />
+	  <ProjectReference Include="..\linker.messenger.api\linker.messenger.api.csproj" Condition="'$(LinkerVpnClientOnly)' != 'true'" />
+	  <ProjectReference Include="..\linker.messenger.forward\linker.messenger.forward.csproj" Condition="'$(LinkerVpnClientOnly)' != 'true'" />
 	  <ProjectReference Include="..\linker.messenger.signin\linker.messenger.signin.csproj" />
-	  <ProjectReference Include="..\linker.messenger.socks5\linker.messenger.socks5.csproj" />
+	  <ProjectReference Include="..\linker.messenger.socks5\linker.messenger.socks5.csproj" Condition="'$(LinkerVpnClientOnly)' != 'true'" />
 	  <ProjectReference Include="..\linker.messenger.sync\linker.messenger.sync.csproj" />
 	  <ProjectReference Include="..\linker.messenger\linker.messenger.csproj" />
 	  <ProjectReference Include="..\linker.nat\linker.nat.csproj" />
 	  <ProjectReference Include="..\linker.tun\linker.tun.csproj" />
 	</ItemGroup>
+	<PropertyGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<DefineConstants>$(DefineConstants);LINKER_VPN_CLIENT_ONLY</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<Compile Remove="FirewallApiController.cs" />
+		<Compile Remove="hooks\ForwardFirewallHook.cs" />
+		<Compile Remove="hooks\Socks5FirewallHook.cs" />
+	</ItemGroup>
+	<ItemDefinitionGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<ProjectReference AdditionalProperties="LinkerVpnClientOnly=true" />
+	</ItemDefinitionGroup>
 
 </Project>

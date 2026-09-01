@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    The MAUI host and the Packet Tunnel build different variants of the same Linker projects.
+    Keeping both variants in the default bin/obj directories can pair a managed DLL from one
+    variant with an iOS AOT module produced from the other variant (different assembly MVID).
+  -->
+  <PropertyGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\vpn\$(Configuration)\$(TargetFramework)\</IntermediateOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\vpn\$(Configuration)\$(TargetFramework)\</OutputPath>
+    <!-- ProjectReference path prediction can drop Configuration for property variants and look
+         under obj\vpn\net8.0\ref. Consume the actual isolated implementation DLL instead. -->
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+  </PropertyGroup>
+</Project>

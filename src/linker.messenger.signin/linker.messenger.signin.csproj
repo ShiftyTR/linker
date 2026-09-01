@@ -38,9 +38,18 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\linker.libs\linker.libs.csproj" />
-		<ProjectReference Include="..\linker.messenger.api\linker.messenger.api.csproj" />
+		<ProjectReference Include="..\linker.messenger.api\linker.messenger.api.csproj" Condition="'$(LinkerVpnClientOnly)' != 'true'" />
 		<ProjectReference Include="..\linker.messenger.exroute\linker.messenger.exroute.csproj" />
 		<ProjectReference Include="..\linker.messenger\linker.messenger.csproj" />
 	</ItemGroup>
+	<PropertyGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<DefineConstants>$(DefineConstants);LINKER_VPN_CLIENT_ONLY</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<Compile Remove="SignInApiController.cs" />
+	</ItemGroup>
+	<ItemDefinitionGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+		<ProjectReference AdditionalProperties="LinkerVpnClientOnly=true" />
+	</ItemDefinitionGroup>
 
 </Project>

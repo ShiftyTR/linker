@@ -1,11 +1,17 @@
-﻿using linker.libs.web;
+﻿#if !LINKER_VPN_CLIENT_ONLY
+using linker.libs.web;
 using linker.messenger.node;
+#endif
 using linker.messenger.relay.client;
 using linker.messenger.relay.messenger;
+#if !LINKER_VPN_CLIENT_ONLY
 using linker.messenger.relay.server;
 using linker.messenger.relay.server.validator;
+#endif
 using linker.messenger.relay.transport;
+#if !LINKER_VPN_CLIENT_ONLY
 using linker.messenger.relay.webapi;
+#endif
 using linker.messenger.sync;
 using linker.tunnel;
 using linker.tunnel.transport;
@@ -23,7 +29,9 @@ namespace linker.messenger.relay
 
             serviceCollection.AddSingleton<RelaySyncDefault>();
 
+#if !LINKER_VPN_CLIENT_ONLY
             serviceCollection.AddSingleton<RelayApiController>();
+#endif
 
             serviceCollection.AddSingleton<RelayClientTestTransfer>();
 
@@ -43,15 +51,17 @@ namespace linker.messenger.relay
             SyncTreansfer syncTreansfer = serviceProvider.GetService<SyncTreansfer>();
             syncTreansfer.AddSyncs(new List<ISync> { serviceProvider.GetService<RelaySyncDefault>() });
 
+#if !LINKER_VPN_CLIENT_ONLY
             linker.messenger.api.IWebServer apiServer = serviceProvider.GetService<linker.messenger.api.IWebServer>();
             apiServer.AddPlugins(new List<IApiController> { serviceProvider.GetService<RelayApiController>() });
+#endif
 
             RelayClientTestTransfer relayClientTestTransfer = serviceProvider.GetService<RelayClientTestTransfer>();
 
             return serviceProvider;
         }
 
-
+#if !LINKER_VPN_CLIENT_ONLY
         public static ServiceCollection AddRelayServer(this ServiceCollection serviceCollection)
         {
             serviceCollection.AddSingleton<RelayServerMessenger>();
@@ -96,5 +106,6 @@ namespace linker.messenger.relay
 
             return serviceProvider;
         }
+#endif
     }
 }

@@ -42,5 +42,8 @@
 	  <ProjectReference Include="..\linker.messenger\linker.messenger.csproj" />
 	  <ProjectReference Include="..\linker.tunnel\linker.tunnel.csproj" />
 	</ItemGroup>
+	<ItemDefinitionGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+	  <ProjectReference AdditionalProperties="LinkerVpnClientOnly=true" />
+	</ItemDefinitionGroup>
 
 </Project>

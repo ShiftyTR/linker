@@ -1,4 +1,6 @@
-﻿using linker.libs.web;
+﻿#if !LINKER_VPN_CLIENT_ONLY
+using linker.libs.web;
+#endif
 using Microsoft.Extensions.DependencyInjection;
 namespace linker.messenger.sync
 {
@@ -8,7 +10,9 @@ namespace linker.messenger.sync
         {
             serviceCollection.AddSingleton<SyncTreansfer>();
             serviceCollection.AddSingleton<SyncClientMessenger>();
+#if !LINKER_VPN_CLIENT_ONLY
             serviceCollection.AddSingleton<SyncApiController>();
+#endif
             return serviceCollection;
         }
         public static ServiceProvider UseSyncClient(this ServiceProvider serviceProvider)
@@ -16,8 +20,10 @@ namespace linker.messenger.sync
             IMessengerResolver messengerResolver= serviceProvider.GetService<IMessengerResolver>();
             messengerResolver.AddMessenger(new List<IMessenger> { serviceProvider.GetService<SyncClientMessenger>() });
 
+#if !LINKER_VPN_CLIENT_ONLY
             linker.messenger.api.IWebServer apiServer = serviceProvider.GetService<linker.messenger.api.IWebServer>();
             apiServer.AddPlugins(new List<IApiController> { serviceProvider.GetService<SyncApiController>() });
+#endif
 
             return serviceProvider;
         }
