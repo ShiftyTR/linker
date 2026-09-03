@@ -118,8 +118,8 @@ namespace linker.messenger.tuntap.cidr
             }
 
             routeItems = _routeItems;
-
-            GC.Collect();
+            // No forced GC here: this runs on every peer-list refresh and a blocking full collection
+            // stalls the packet path (and is costly inside the iOS Network Extension).
         }
         private List<TuntapVeaLanIPAddressList> ParseIPs(List<TuntapInfo> infos)
         {

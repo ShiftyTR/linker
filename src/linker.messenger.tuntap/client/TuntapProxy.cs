@@ -48,6 +48,7 @@ namespace linker.messenger.tuntap.client
             this.tuntapCidrDecenterManager = tuntapCidrDecenterManager;
             this.tuntapDecenter = tuntapDecenter;
 
+#if DEBUG
             TimerHelper.SetIntervalLong(() =>
             {
                 foreach (ITunnelConnection item in Connections.Values)
@@ -56,6 +57,7 @@ namespace linker.messenger.tuntap.client
                     System.Diagnostics.Debug.WriteLine($"[Chan stat] #{item.GetHashCode()} {item.RemoteMachineId} {item.TransportName}/{item.Type} connected={item.Connected} delay={item.Delay} recv={item.ReceiveBytes} send={item.SendBytes} recvBuf={item.RecvBufferRemaining} sendBuf={item.SendBufferRemaining} lastTicks={item.LastTicks.Diff()}ms");
                 }
             }, 30000);
+#endif
         }
 
         protected override void Connected(ITunnelConnection connection)

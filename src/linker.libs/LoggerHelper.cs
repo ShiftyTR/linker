@@ -11,7 +11,12 @@ namespace linker.libs
         private static readonly Lazy<LoggerHelper> lazy = new Lazy<LoggerHelper>(() => new LoggerHelper());
         public static LoggerHelper Instance => lazy.Value;
 
-        private readonly Channel<LoggerModel> queue = Channel.CreateUnbounded<LoggerModel>();
+        // Bounded so a slow/absent OnLogger consumer can never grow the heap (matters inside the iOS Network Extension).
+        private readonly Channel<LoggerModel> queue = Channel.CreateBounded<LoggerModel>(new BoundedChannelOptions(1024)
+        {
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.DropOldest
+        });
         public Action<LoggerModel> OnLogger { get; set; } = (param) => { };
 
         public int PaddingWidth { get; set; } = 50;
@@ -106,6 +111,7 @@ namespace linker.libs
 
         public void Enqueue(LoggerModel model)
         {
+            if (model.Type < LoggerLevel) return;
             if (string.IsNullOrWhiteSpace(model.Content)) return;
             queue.Writer.TryWrite(model);
         }

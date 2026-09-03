@@ -50,7 +50,15 @@ public sealed class VpnClientRuntime : IDisposable
             .AddFirewallClient()
             .AddChannelClient();
 
-        serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true, ValidateOnBuild = true });
+        // ValidateOnBuild eagerly reflects over every registration; keep it as a debug-only check so
+        // the memory-constrained Network Extension starts faster and allocates less.
+        serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+#if DEBUG
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+#endif
+        });
         options.AfterBuild?.Invoke(this);
     }
 
