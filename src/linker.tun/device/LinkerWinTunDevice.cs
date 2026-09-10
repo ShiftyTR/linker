@@ -1,4 +1,4 @@
-﻿using linker.libs;
+using linker.libs;
 using linker.libs.extends;
 using System.Buffers.Binary;
 using System.Net;
@@ -22,6 +22,7 @@ namespace linker.tun.device
         private byte prefixLength = 24;
 
         private CancellationTokenSource tokenSource;
+        private readonly object deviceLock = new();
 
 
 
@@ -30,6 +31,11 @@ namespace linker.tun.device
         }
 
         public bool Setup(LinkerTunDeviceSetupInfo info, out string error)
+        {
+            lock (deviceLock) return SetupCore(info, out error);
+        }
+
+        private bool SetupCore(LinkerTunDeviceSetupInfo info, out string error)
         {
             name = info.Name;
             address = info.Address;
@@ -56,6 +62,7 @@ namespace linker.tun.device
                 {
                     Shutdown();
                     Thread.Sleep(2000);
+                    continue;
                 }
                 session = WinTun.WintunStartSession(adapter, 0x400000);
                 if (session == 0)
@@ -141,6 +148,11 @@ namespace linker.tun.device
 
         public void Shutdown()
         {
+            lock (deviceLock) ShutdownCore();
+        }
+
+        private void ShutdownCore()
+        {
             tokenSource?.Cancel();
             if (waitHandle != 0)
             {
@@ -164,6 +176,11 @@ namespace linker.tun.device
 
         public void Refresh()
         {
+            lock (deviceLock) RefreshCore();
+        }
+
+        private void RefreshCore()
+        {
             if (session == 0) return;
             try
             {
@@ -171,7 +188,9 @@ namespace linker.tun.device
                 nint oldWaitHandle = waitHandle;
 
                 CommandHelper.Windows(string.Empty, new string[] { $"netsh interface set interface {Name} enable" });
-                session = WinTun.WintunStartSession(adapter, 0x400000);
+                var replacement = WinTun.WintunStartSession(adapter, 0x400000);
+                if (replacement == 0) return;
+                session = replacement;
                 waitHandle = WinTun.WintunGetReadWaitEvent(session);
                 AddIPV4();
                 //AddIPV6();
@@ -353,57 +372,51 @@ namespace linker.tun.device
         public unsafe byte[] Read(out int length)
         {
             length = 0;
-            if (session == 0) return Helper.EmptyArray;
-            for (; tokenSource.IsCancellationRequested == false;)
+            CancellationTokenSource readLifetime;
+            lock (deviceLock) readLifetime = tokenSource;
+            while (true)
             {
-                nint packetPtr = WinTun.WintunReceivePacket(session, out uint size);
-                length = (int)size;
-
-                if (packetPtr != 0)
+                nint readable;
+                lock (deviceLock)
                 {
-                    new Span<byte>((byte*)packetPtr, length).CopyTo(buffer.AsSpan(4, length));
-                    length.ToBytes(buffer.AsSpan());
-                    WinTun.WintunReleaseReceivePacket(session, packetPtr);
-                    length += 4;
-                    return buffer;
-                }
-                else
-                {
+                    if (session == 0 || readLifetime == null || readLifetime.IsCancellationRequested
+                        || !ReferenceEquals(readLifetime, tokenSource)) return Helper.EmptyArray;
+                    nint packetPtr = WinTun.WintunReceivePacket(session, out uint size);
+                    if (packetPtr != 0)
+                    {
+                        try
+                        {
+                            if (size == 0 || size > buffer.Length - 4) return Helper.EmptyArray;
+                            new ReadOnlySpan<byte>((byte*)packetPtr, (int)size).CopyTo(buffer.AsSpan(4));
+                            BinaryPrimitives.WriteInt32LittleEndian(buffer, (int)size);
+                            length = (int)size + 4;
+                            return buffer;
+                        }
+                        finally { WinTun.WintunReleaseReceivePacket(session, packetPtr); }
+                    }
                     int error = Marshal.GetLastWin32Error();
-
-                    if (error == 0 || error == 259L)
-                    {
-                        WinTun.WaitForSingleObject(waitHandle, 0xFFFFFFFF);
-                    }
-                    else
-                    {
-                        return Helper.EmptyArray;
-                    }
+                    if (error != 0 && error != 259) return Helper.EmptyArray;
+                    readable = waitHandle;
                 }
+                // Shutdown/refresh can release a native session. Never hold a pointer into
+                // its ring buffer outside deviceLock, and never wait indefinitely on its event.
+                WinTun.WaitForSingleObject(readable, 250);
             }
-            return Helper.EmptyArray;
         }
+
         public unsafe bool Write(ReadOnlyMemory<byte> packet)
         {
-            if (session == 0 || tokenSource.IsCancellationRequested) return false;
-
-            nint packetPtr = WinTun.WintunAllocateSendPacket(session, (uint)packet.Length);
-            if (packetPtr != 0)
+            lock (deviceLock)
             {
+                if (session == 0 || tokenSource == null || tokenSource.IsCancellationRequested
+                    || packet.Length == 0 || packet.Length > 65535) return false;
+                nint packetPtr = WinTun.WintunAllocateSendPacket(session, (uint)packet.Length);
+                if (packetPtr == 0) return false;
                 packet.Span.CopyTo(new Span<byte>((byte*)packetPtr, packet.Length));
                 WinTun.WintunSendPacket(session, packetPtr);
                 return true;
             }
-            else
-            {
-                if (Marshal.GetLastWin32Error() == 111L)
-                {
-                    return false;
-                }
-            }
-            return false;
         }
-
         private int GetWindowsInterfaceNum()
         {
             NetworkInterface adapter = NetworkInterface.GetAllNetworkInterfaces()

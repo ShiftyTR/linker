@@ -1,4 +1,4 @@
-﻿
+
 using linker.libs;
 using linker.libs.timer;
 using linker.messenger.signin;
@@ -72,49 +72,51 @@ namespace linker.messenger.tuntap.client
         /// <param name="info"></param>
         public void Update(TuntapInfo info)
         {
-            TimerHelper.Async(async () =>
+            TimerHelper.Async(() => UpdateAsync(info));
+        }
+
+        public async Task UpdateAsync(TuntapInfo info, bool refreshLease = true)
+        {
+            string oldStr = string.Join(",", [
+                $"{Info.IP}",
+                $"{Info.PrefixLength}",
+                $"{Info.Name}",
+                $"{Info.NetworkName}",
+                $"{Info.Mtu}",
+                $"{Info.MssFix}"
+            ]);
+
+            Info.IP = info.IP ?? IPAddress.Any;
+            Info.Lans = info.Lans;
+            Info.PrefixLength = info.PrefixLength;
+            Info.Name = info.Name;
+            Info.Switch = info.Switch;
+            Info.Forwards = info.Forwards;
+            Info.NetworkName = info.NetworkName;
+            Info.Mtu = info.Mtu;
+            Info.MssFix = info.MssFix;
+            Info.VlsmStatus = info.VlsmStatus;
+
+            string newStr = string.Join(",", [
+                $"{Info.IP}",
+                $"{Info.PrefixLength}",
+                $"{Info.Name}",
+                $"{Info.NetworkName}",
+                $"{Info.Mtu}",
+                $"{Info.MssFix}"
+            ]);
+
+            tuntapStore.Confirm();
+
+            if (refreshLease) await LeaseIP().ConfigureAwait(false);
+            SetGroupIP();
+
+            if (newStr != oldStr)
             {
-                string oldStr = string.Join(",", [
-                    $"{Info.IP}",
-                    $"{Info.PrefixLength}",
-                    $"{Info.Name}",
-                    $"{Info.NetworkName}",
-                    $"{Info.Mtu}",
-                    $"{Info.MssFix}"
-                ]);
+                Version.Increment();
+            }
 
-                Info.IP = info.IP ?? IPAddress.Any;
-                Info.Lans = info.Lans;
-                Info.PrefixLength = info.PrefixLength;
-                Info.Name = info.Name;
-                Info.Switch = info.Switch;
-                Info.Forwards = info.Forwards;
-                Info.NetworkName = info.NetworkName;
-                Info.Mtu = info.Mtu;
-                Info.MssFix = info.MssFix;
-                Info.VlsmStatus = info.VlsmStatus;
-
-                string newStr = string.Join(",", [
-                    $"{Info.IP}",
-                    $"{Info.PrefixLength}",
-                    $"{Info.Name}",
-                    $"{Info.NetworkName}",
-                    $"{Info.Mtu}",
-                    $"{Info.MssFix}"
-                ]);
-
-                tuntapStore.Confirm();
-
-                await LeaseIP().ConfigureAwait(false);
-                SetGroupIP();
-
-                if (newStr != oldStr)
-                {
-                    Version.Increment();
-                }
-
-                OnUpdate();
-            });
+            OnUpdate();
         }
 
         public void SetID(Guid guid)

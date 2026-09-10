@@ -13,6 +13,11 @@ namespace linker.libs
         private static extern bool EmptyWorkingSet(IntPtr hProcess);
         public static void FlushMemory()
         {
+            // Mobile runtimes coordinate managed and Java/native peers themselves.
+            // A desktop working-set trim must not force full collections during VPN sign-in.
+            if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst())
+                return;
+
             try
             {
                 GC.RefreshMemoryLimit();
@@ -24,9 +29,6 @@ namespace linker.libs
             GC.Collect();
             GC.Collect(2, GCCollectionMode.Aggressive);
 
-#pragma warning disable CA1816 // Dispose 方法应调用 SuppressFinalize
-            GC.SuppressFinalize(true);
-#pragma warning restore CA1816 // Dispose 方法应调用 SuppressFinalize
             GC.WaitForPendingFinalizers();
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {

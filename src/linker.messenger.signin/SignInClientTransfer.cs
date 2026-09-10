@@ -163,6 +163,12 @@ namespace linker.messenger.signin
                 {
                     return 3;
                 }
+
+                if (!commonStore.Installed)
+                {
+                    SignOut();
+                    return 1;
+                }
                 if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
                     LoggerHelper.Instance.Info($"signin to server success:{host}");
 

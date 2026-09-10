@@ -29,7 +29,6 @@ namespace linker.tun.hook
             catch (Exception)
             {
             }
-            GC.Collect();
         }
 
         public (LinkerTunPacketHookFlags add, LinkerTunPacketHookFlags del) Read(ReadOnlyMemory<byte> packet)

@@ -48,7 +48,9 @@ namespace linker.messenger.store.file
             catch (Exception ex)
             {
                 LoggerHelper.Instance.Error(ex);
-                Helper.AppExit(1);
+                // This library is also hosted by mobile/desktop applications. Let the host
+                // report a failed VPN startup instead of terminating the entire process.
+                throw new InvalidOperationException("Unable to initialize the VPN configuration database.", ex);
             }
         }
 

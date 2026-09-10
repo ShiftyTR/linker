@@ -24,6 +24,7 @@ namespace linker.libs
         /// <param name="payload">是否计算荷载协议校验和</param>
         public static unsafe void ChecksumWithZero(ReadOnlySpan<byte> packet, bool ipHeader = true, bool payload = true)
         {
+            if (!ValidatePacket(packet, ref payload)) return;
             fixed (byte* ptr = packet)
             {
                 ChecksumWithZero(ptr, ipHeader, payload);
@@ -35,7 +36,7 @@ namespace linker.libs
         /// <param name="ptr">IP包指针</param>
         /// <param name="ipHeader">是否计算IP头校验和</param>
         /// <param name="payload">是否计算荷载协议校验和</param>
-        public static unsafe void ChecksumWithZero(byte* ptr, bool ipHeader = true, bool payload = true)
+        private static unsafe void ChecksumWithZero(byte* ptr, bool ipHeader = true, bool payload = true)
         {
             byte ipHeaderLength = (byte)((*ptr & 0b1111) * 4);
             byte* packetPtr = ptr + ipHeaderLength;
@@ -71,6 +72,7 @@ namespace linker.libs
         /// <param name="payload">是否计算荷载协议校验和</param>
         public static unsafe void Checksum(ReadOnlySpan<byte> packet, bool ipHeader = true, bool payload = true)
         {
+            if (!ValidatePacket(packet, ref payload)) return;
             fixed (byte* ptr = packet)
             {
                 Checksum(ptr, ipHeader, payload);
@@ -82,7 +84,7 @@ namespace linker.libs
         /// <param name="ptr">IP包指针</param>
         /// <param name="ipHeader">是否计算IP头校验和</param>
         /// <param name="payload">是否计算荷载协议校验和</param>
-        public static unsafe void Checksum(byte* ptr, bool ipHeader = true, bool payload = true)
+        private static unsafe void Checksum(byte* ptr, bool ipHeader = true, bool payload = true)
         {
             byte ipHeaderLength = (byte)((*ptr & 0b1111) * 4);
             byte* packetPtr = ptr + ipHeaderLength;
@@ -157,7 +159,7 @@ namespace linker.libs
                 length -= 2;
                 pseudoHeaderSum = (pseudoHeaderSum & 0xffff) + (pseudoHeaderSum >> 16);
             }
-            if (length > 0) pseudoHeaderSum += (ushort)((*ptr16) << 8);
+            if (length > 0) pseudoHeaderSum += (ushort)((*(byte*)ptr16) << 8);
             while ((pseudoHeaderSum >> 16) != 0) pseudoHeaderSum = (pseudoHeaderSum & 0xffff) + (pseudoHeaderSum >> 16);
             return BinaryPrimitives.ReverseEndianness((ushort)(~pseudoHeaderSum));
         }
@@ -172,6 +174,35 @@ namespace linker.libs
             uint srcIp = BinaryPrimitives.ReverseEndianness(*(uint*)(addr + 12));
             uint dstIp = BinaryPrimitives.ReverseEndianness(*(uint*)(addr + 16));
             return (srcIp >> 16) + (srcIp & 0xFFFF) + (dstIp >> 16) + (dstIp & 0xFFFF) + *(addr + 9) + length;
+        }
+
+        private static bool ValidatePacket(ReadOnlySpan<byte> packet, ref bool payload)
+        {
+            // Validate before entering pointer-based code: a truncated transport header
+            // can otherwise make a checksum write corrupt the next managed object.
+            if (packet.Length < 20 || packet[0] >> 4 != 4) return false;
+            int headerLength = (packet[0] & 15) * 4;
+            int totalLength = BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(2, 2));
+            if (headerLength < 20 || totalLength < headerLength || totalLength > packet.Length) return false;
+
+            // A fragment does not contain the full transport payload, and later fragments
+            // do not contain a transport header at all. Only its IPv4 checksum is local.
+            if ((BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(6, 2)) & 0x3FFF) != 0)
+            {
+                payload = false;
+                return true;
+            }
+
+            if (!payload) return true;
+            int transportLength = totalLength - headerLength;
+            int minimumLength = (ProtocolType)packet[9] switch
+            {
+                ProtocolType.Tcp => 20,
+                ProtocolType.Udp => 8,
+                ProtocolType.Icmp => 4,
+                _ => 0,
+            };
+            return transportLength >= minimumLength;
         }
     }
 }
