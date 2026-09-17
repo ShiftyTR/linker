@@ -1,4 +1,4 @@
-﻿using linker.tunnel.connection;
+using linker.tunnel.connection;
 using linker.libs;
 using System.Buffers;
 using System.Net;
@@ -47,6 +47,7 @@ namespace linker.messenger.socks5
         /// <returns></returns>
         public Task Closed(ITunnelConnection connection, object userToken)
         {
+            RemoveConnection(connection);
             Version.Increment();
             return Task.CompletedTask;
         }

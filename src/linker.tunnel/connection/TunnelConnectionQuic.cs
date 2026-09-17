@@ -1,4 +1,4 @@
-﻿using linker.libs;
+using linker.libs;
 using linker.libs.extends;
 using System.Buffers;
 using System.IO.Pipelines;
@@ -35,7 +35,8 @@ namespace linker.tunnel.connection
         public bool SSL => true;
         public byte BufferSize { get; init; } = 3;
 
-        public bool Connected => Stream != null && Stream.CanWrite && LastTicks.HasValue();
+        private int disposed;
+        public bool Connected => Volatile.Read(ref disposed) == 0 && Stream != null && Stream.CanWrite && !LastTicks.Expired(20000);
         public int Delay { get; private set; }
         public LastTicksManager LastTicks { get; private set; } = new LastTicksManager();
 
@@ -72,6 +73,7 @@ namespace linker.tunnel.connection
 
         public void BeginReceive(ITunnelConnectionReceiveCallback callback, object userToken)
         {
+            if (Volatile.Read(ref disposed) != 0) return;
             if (this.callback != null) return;
 
             this.callback = callback;
@@ -239,7 +241,7 @@ namespace linker.tunnel.connection
                         packetEncoder.Advance(memoryBlock.Length);
                     }
                     packetEncoder.AdvanceTo(result.Buffer.End);
-                    LastTicks.Update();
+
                 }
             }
             catch (Exception ex)
@@ -281,6 +283,7 @@ namespace linker.tunnel.connection
 
         public void Dispose()
         {
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
             LastTicks.Clear();
             if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
                 LoggerHelper.Instance.Error($"tunnel connection {this.GetHashCode()} writer offline {ToString()}");

@@ -27,7 +27,8 @@ namespace linker.messenger.relay.server
             this.serializer = serializer;
         }
 
-        private readonly ConcurrentDictionary<ulong, TaskCompletionSource<Socket>> relayDic = new();
+        // FlowId is a counter local to each client, not a node-wide session id.
+        private readonly ConcurrentDictionary<(string Master, string From, string To, ulong Flow), TaskCompletionSource<Socket>> relayDic = new();
 
         public virtual void Add(string key, string from, string to, string groupid, long receiveBytes, long sendtBytes)
         {
@@ -53,14 +54,19 @@ namespace linker.messenger.relay.server
                 int received = 0, length = 4;
                 while (received < length)
                 {
-                    received += await socket.ReceiveAsync(buffer.AsMemory(received, length - received), SocketFlags.None, cts.Token).ConfigureAwait(false);
+                    int count = await socket.ReceiveAsync(buffer.AsMemory(received, length - received), SocketFlags.None, cts.Token).ConfigureAwait(false);
+                    if (count == 0) return null;
+                    received += count;
                 }
 
                 received = 0;
                 length = buffer.ToInt32();
+                if (length <= 0 || length > buffer.Length) return null;
                 while (received < length)
                 {
-                    received += await socket.ReceiveAsync(buffer.AsMemory(received, length - received), SocketFlags.None, cts.Token).ConfigureAwait(false);
+                    int count = await socket.ReceiveAsync(buffer.AsMemory(received, length - received), SocketFlags.None, cts.Token).ConfigureAwait(false);
+                    if (count == 0) return null;
+                    received += count;
                 }
 
                 return serializer.Deserialize<RelayMessageInfo>(crypto.Decode(buffer, 0, length).Span);
@@ -101,6 +107,7 @@ namespace linker.messenger.relay.server
                 {
                     LoggerHelper.Instance.Error($"server relay get message:fail");
                     await socket.SendAsync(Helper.FalseArray).ConfigureAwait(false);
+                    socket.SafeClose();
                     return;
                 }
                 if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
@@ -125,11 +132,12 @@ namespace linker.messenger.relay.server
                     return;
                 }
 
+                var sessionKey = (relayMessage.MasterId, relayCache.FromId, relayCache.ToId, relayCache.FlowId);
                 if (relayMessage.Type == RelayMessengerType.Answer)
                 {
-                    if (relayDic.TryRemove(relayCache.FlowId, out TaskCompletionSource<Socket> tcsAsk))
+                    if (relayDic.TryGetValue(sessionKey, out TaskCompletionSource<Socket> tcsAsk))
                     {
-                        tcsAsk.TrySetResult(socket);
+                        if (!tcsAsk.TrySetResult(socket)) socket.SafeClose();
                     }
                     else
                     {
@@ -139,13 +147,20 @@ namespace linker.messenger.relay.server
                 }
 
                 TaskCompletionSource<Socket> tcs = new TaskCompletionSource<Socket>(TaskCreationOptions.RunContinuationsAsynchronously);
+                // Publish before acknowledging: an answer can arrive as soon as the
+                // initiator receives the acknowledgement. Reject duplicate asks.
+                if (!relayDic.TryAdd(sessionKey, tcs))
+                {
+                    await socket.SendAsync(Helper.FalseArray).ConfigureAwait(false);
+                    socket.SafeClose();
+                    return;
+                }
                 Socket answerSocket = null;
                 IPEndPoint fromep = (socket.RemoteEndPoint as IPEndPoint).MapToIPv4(), toep = null;
                 try
                 {
                     await socket.SendAsync(Helper.TrueArray).ConfigureAwait(false);
-                    relayDic.TryAdd(relayCache.FlowId, tcs);
-                    answerSocket = await tcs.WithTimeout(TimeSpan.FromMilliseconds(15000)).ConfigureAwait(false);
+                    answerSocket = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
                     await answerSocket.SendAsync(Helper.TrueArray).ConfigureAwait(false);
                     toep = (answerSocket.RemoteEndPoint as IPEndPoint).MapToIPv4();
 
@@ -161,14 +176,18 @@ namespace linker.messenger.relay.server
                 }
                 catch (Exception ex)
                 {
-                    tcs.TrySetResult(null);
+                    tcs.TrySetCanceled();
                     if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
                         LoggerHelper.Instance.Error($"relay server error {ex},flowid:{relayMessage.FlowId}");
                 }
                 finally
                 {
                     LoggerHelper.Instance.Info($"relay server end {fromep} to {toep}");
-                    relayDic.TryRemove(relayCache.FlowId, out _);
+                    relayDic.TryRemove(new KeyValuePair<(string, string, string, ulong), TaskCompletionSource<Socket>>(sessionKey, tcs));
+                    // An answer can win the race with the timeout; it still belongs
+                    // to this session and must not leave an orphaned socket.
+                    if (answerSocket == null && tcs.Task.IsCompletedSuccessfully)
+                        answerSocket = tcs.Task.Result;
                     socket?.SafeClose();
                     answerSocket?.SafeClose();
                 }

@@ -1,4 +1,4 @@
-﻿#if !LINKER_VPN_CLIENT_ONLY
+#if !LINKER_VPN_CLIENT_ONLY
 using linker.libs.web;
 #endif
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +18,13 @@ namespace linker.messenger.channel
         }
         public static ServiceProvider UseChannelClient(this ServiceProvider serviceProvider, JsonDocument json = default)
         {
+            serviceProvider.GetRequiredService<linker.messenger.signin.SignInClientState>().OnSignInBrfore += () =>
+            {
+                serviceProvider.GetRequiredService<linker.tunnel.TunnelTransfer>().CancelPending();
+                serviceProvider.GetRequiredService<ChannelConnectionCaching>().Clear();
+                linker.libs.diagnostics.VpnHealthJournal.Reset();
+                return Task.CompletedTask;
+            };
 #if !LINKER_VPN_CLIENT_ONLY
             linker.messenger.api.IWebServer apiServer = serviceProvider.GetService<linker.messenger.api.IWebServer>();
             apiServer.AddPlugins(new List<IApiController> { serviceProvider.GetService<ChannelApiController>() });

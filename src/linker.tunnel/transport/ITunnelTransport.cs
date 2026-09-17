@@ -1,4 +1,4 @@
-﻿using linker.tunnel.connection;
+using linker.tunnel.connection;
 using linker.tunnel.wanport;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
@@ -180,6 +180,11 @@ namespace linker.tunnel.transport
 
     public sealed partial class TunnelTransportInfo
     {
+        [System.Text.Json.Serialization.JsonIgnore]
+        public CancellationToken CancellationToken { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public int SessionGeneration { get; set; }
+
         /// <summary>
         /// 我的
         /// </summary>

@@ -1,4 +1,4 @@
-﻿using linker.libs;
+using linker.libs;
 using linker.libs.extends;
 #if !LINKER_VPN_CLIENT_ONLY
 using linker.libs.web;
@@ -29,6 +29,7 @@ namespace linker.messenger.tuntap
             serviceCollection.AddSingleton<LinkerTunDeviceAdapter>();
             serviceCollection.AddSingleton<TuntapTransfer>();
             serviceCollection.AddSingleton<TuntapProxy>();
+            serviceCollection.AddSingleton<VpnHealthPublisher>();
 
             serviceCollection.AddSingleton<TuntapClientMessenger>();
             serviceCollection.AddSingleton<LeaseClientTreansfer>();
@@ -66,6 +67,7 @@ namespace linker.messenger.tuntap
             TuntapPingTransfer tuntapPingTransfer = serviceProvider.GetService<TuntapPingTransfer>();
 
             TuntapAdapter tuntapAdapter = serviceProvider.GetService<TuntapAdapter>();
+            serviceProvider.GetRequiredService<VpnHealthPublisher>().Start();
 
 
             IMessengerResolver messengerResolver = serviceProvider.GetService<IMessengerResolver>();
@@ -151,6 +153,8 @@ namespace linker.messenger.tuntap
         public static ServiceCollection AddTuntapServer(this ServiceCollection serviceCollection)
         {
             serviceCollection.AddSingleton<TuntapServerMessenger>();
+            serviceCollection.AddSingleton<linker.libs.diagnostics.VpnHealthCache>();
+            serviceCollection.AddSingleton<VpnHealthMessenger>();
             serviceCollection.AddSingleton<LeaseServerTreansfer>();
 
             serviceCollection.AddSingleton<ITuntapSystemInformation, TuntapSystemInformation>();
@@ -162,7 +166,7 @@ namespace linker.messenger.tuntap
             LeaseServerTreansfer leaseTreansfer = serviceProvider.GetService<LeaseServerTreansfer>();
 
             IMessengerResolver messengerResolver = serviceProvider.GetService<IMessengerResolver>();
-            messengerResolver.AddMessenger(new List<IMessenger> { serviceProvider.GetService<TuntapServerMessenger>() });
+            messengerResolver.AddMessenger(new List<IMessenger> { serviceProvider.GetService<TuntapServerMessenger>(), serviceProvider.GetRequiredService<VpnHealthMessenger>() });
 
             return serviceProvider;
         }

@@ -1,4 +1,4 @@
-﻿using linker.fec;
+using linker.fec;
 using linker.libs;
 using linker.libs.extends;
 using System.Buffers;
@@ -34,7 +34,8 @@ namespace linker.tunnel.connection
         public bool SSL { get; init; }
         public byte BufferSize { get; init; } = 3;
 
-        public bool Connected => UdpClient != null && LastTicks.Expired(60000) == false;
+        private int disposed;
+        public bool Connected => Volatile.Read(ref disposed) == 0 && UdpClient != null && LastTicks.Expired(20000) == false;
         public int Delay { get; private set; }
 
         public LastTicksManager LastTicks { get; private set; } = new LastTicksManager();
@@ -76,6 +77,7 @@ namespace linker.tunnel.connection
 
         public void BeginReceive(ITunnelConnectionReceiveCallback callback, object userToken)
         {
+            if (Volatile.Read(ref disposed) != 0) return;
             if (this.callback != null)
             {
                 return;
@@ -113,6 +115,8 @@ namespace linker.tunnel.connection
                             LoggerHelper.Instance.Error($"tunnel connection writer offline 0");
                         continue;
                     }
+                    if (result.RemoteEndPoint is not IPEndPoint source || source.Port != IPEndPoint.Port ||
+                        !source.Address.MapToIPv6().Equals(IPEndPoint.Address.MapToIPv6())) continue;
                     await RecvHook(buffer.AsMemory(0, result.ReceivedBytes)).ConfigureAwait(false);
                 }
             }
@@ -240,12 +244,15 @@ namespace linker.tunnel.connection
             else
             {
                 await callback.Receive(this, data, this.userToken).ConfigureAwait(false);
+                ReceiveBytes += data.Length;
+                LastTicks.Update();
             }
-            ReceiveBytes += data.Length;
-            LastTicks.Update();
         }
         private async Task CallbackPacket(ReadOnlyMemory<byte> memory)
         {
+            // Only successfully decoded peer traffic proves this UDP path works.
+            ReceiveBytes += memory.Length;
+            LastTicks.Update();
             try
             {
                 if (memory.Length == pingBytes.Length && memory.Span.Slice(0, pingBytes.Length - 4).SequenceEqual(pingBytes.AsSpan(0, pingBytes.Length - 4)))
@@ -397,30 +404,31 @@ namespace linker.tunnel.connection
 
         public void Dispose()
         {
-            if (callback == null) return;
-
-            if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
-                LoggerHelper.Instance.Error($"tunnel connection {this.GetHashCode()} writer offline {ToString()}");
-
-            SendPingPong(finBytes).ContinueWith((result) =>
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
+            LastTicks.Clear();
+            var receiver = Interlocked.Exchange(ref callback, null);
+            var state = userToken;
+            userToken = null;
+            receiver?.Closed(this, state);
+            _ = CloseTransport();
+        }
+        private async Task CloseTransport()
+        {
+            try
             {
-
-                LastTicks.Clear();
-                if (Receive == true)
-                    UdpClient?.SafeClose();
-
+                if (cts != null && !cts.IsCancellationRequested)
+                    await SendPingPong(finBytes).WaitAsync(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+            }
+            catch (Exception) { }
+            finally
+            {
                 cts?.Cancel();
-                ITunnelConnectionReceiveCallback _callback = Interlocked.Exchange(ref callback, null);
-                object _userToken = userToken;
-                userToken = null;
-                _callback?.Closed(this, _userToken);
-
+                if (Receive) UdpClient?.SafeClose();
                 Crypto?.Dispose();
-
                 fecEncoder?.Dispose();
                 fecDecoder?.Dispose();
                 stickyEncoder?.Dispose();
-            });
+            }
         }
         public override string ToString()
         {

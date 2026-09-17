@@ -1,4 +1,4 @@
-﻿namespace linker.messenger.tuntap.messenger
+namespace linker.messenger.tuntap.messenger
 {
     public enum TuntapMessengerIds : ushort
     {
@@ -31,6 +31,8 @@
 
         SetID = 2220,
         SetIDForward = 2221,
+
+        HealthReport = 2222,
 
         None = 2299
     }

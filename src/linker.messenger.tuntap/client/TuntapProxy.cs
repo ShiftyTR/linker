@@ -1,4 +1,5 @@
-﻿using linker.libs;
+using linker.libs;
+using linker.libs.diagnostics;
 using linker.libs.timer;
 using linker.messenger.channel;
 using linker.messenger.pcp;
@@ -47,6 +48,11 @@ namespace linker.messenger.tuntap.client
             this.tuntapCidrConnectionManager = tuntapCidrConnectionManager;
             this.tuntapCidrDecenterManager = tuntapCidrDecenterManager;
             this.tuntapDecenter = tuntapDecenter;
+            tuntapDecenter.OnClear += () => pendingPackets.Clear();
+            tuntapDecenter.OnChanged += () =>
+            {
+                foreach (var ip in pendingPackets.Keys) _ = ConnectTunnel(ip);
+            };
 
 #if DEBUG
             TimerHelper.SetIntervalLong(() =>
@@ -59,6 +65,8 @@ namespace linker.messenger.tuntap.client
             }, 30000);
 #endif
         }
+
+        protected override void PrepareConnection(ITunnelConnection connection) => connection.BeginReceive(this, null);
 
         protected override void Connected(ITunnelConnection connection)
         {
@@ -161,11 +169,17 @@ namespace linker.messenger.tuntap.client
 
             if (tuntapCidrDecenterManager.FindValue(ip, out string machineId,out uint dst,out uint prefix))
             {
+                VpnHealthJournal.ResolveRoute(NetworkHelper.ToIP(ip).ToString());
                 connection = await ConnectTunnel(machineId, TunnelProtocolType.None).ConfigureAwait(false);
+            }
+            else
+            {
+                VpnHealthJournal.Record(TransactionId, NetworkHelper.ToIP(ip).ToString(), "error", "route_not_found", "routing");
             }
             if (connection != null)
             {
                 tuntapCidrConnectionManager.Add(ip, connection);
+                await FlushPending(connection).ConfigureAwait(false);
             }
         }
 
@@ -178,6 +192,11 @@ namespace linker.messenger.tuntap.client
             {
                 return;
             }
+            // Failed destinations must not occupy all queue slots forever.
+            long now = Environment.TickCount64;
+            foreach (var entry in pendingPackets)
+                if (now - Volatile.Read(ref entry.Value.LastTicks) > PendingTtlMilliseconds)
+                    pendingPackets.TryRemove(new KeyValuePair<uint, PendingConnectionPackets>(entry.Key, entry.Value));
             //整体IP数量超限时丢弃，防止内存膨胀（极端场景下的保护）
             if (pendingPackets.Count >= PendingMaxIp && pendingPackets.ContainsKey(ip) == false)
             {
@@ -223,14 +242,19 @@ namespace linker.messenger.tuntap.client
                     continue;
                 }
                 //仅补发已就绪连接对应目标IP的数据包
-                if (tuntapCidrConnectionManager.TryGet(ip, out ITunnelConnection target) == false
-                    || target.Connected == false
-                    || target.Equals(connection) == false)
+                // A first connection has no IP->connection entry yet; Update only
+                // replaces existing entries. Resolve queued IPs from the peer routes.
+                if (!connection.Connected
+                    || !Connections.TryGetValue(connection.RemoteMachineId, out ITunnelConnection current)
+                    || !ReferenceEquals(current, connection)
+                    || !tuntapCidrDecenterManager.FindValue(ip, out string machineId, out _, out _)
+                    || machineId != connection.RemoteMachineId)
                 {
                     continue;
                 }
 
-                pendingPackets.TryRemove(ip, out _);
+                tuntapCidrConnectionManager.Add(ip, connection);
+                if (!pendingPackets.TryRemove(ip, out queue)) continue;
                 byte[][] packets;
                 lock (queue)
                 {

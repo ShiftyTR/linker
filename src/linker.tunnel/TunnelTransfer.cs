@@ -1,4 +1,4 @@
-﻿using linker.tunnel.connection;
+using linker.tunnel.connection;
 using linker.tunnel.transport;
 using linker.libs;
 using linker.libs.extends;
@@ -169,6 +169,29 @@ namespace linker.tunnel
         /// <param name="tunnelTypes">只要哪些协议名</param>
         /// <param name="exTunnelTypes">排除哪些协议名</param>
         /// <returns></returns>
+        private int sessionGeneration;
+        private readonly ConcurrentDictionary<CancellationTokenSource, byte> pendingAttempts = new();
+        public void CancelPending()
+        {
+            Interlocked.Increment(ref sessionGeneration);
+            foreach (var attempt in pendingAttempts.Keys)
+                try { attempt.Cancel(); } catch (ObjectDisposedException) { }
+            foreach (var key in backgroundDic.Keys)
+                if (backgroundDic.TryRemove(key, out var source))
+                    try { source.Cancel(); } catch (ObjectDisposedException) { }
+        }
+
+        private static async Task<ITunnelConnection> AwaitConnection(Task<ITunnelConnection> task, CancellationToken token)
+        {
+            try { return await task.WaitAsync(token).ConfigureAwait(false); }
+            catch (OperationCanceledException)
+            {
+                // Some transports predate cancellation. Dispose their eventual result rather than publish it.
+                _ = task.ContinueWith(t => { if (t.IsCompletedSuccessfully) t.Result?.Dispose(); else _ = t.Exception; }, TaskScheduler.Default);
+                throw;
+            }
+        }
+
         public async Task<ITunnelConnection> ConnectAsync(string remoteMachineId, string transactionId,
             TunnelProtocolType denyProtocols, string transactionTag = "", string flag = "default", TunnelType[] tunnelTypes = null, TunnelType[] exTunnelTypes = null, CancellationToken token = default)
         {
@@ -179,9 +202,14 @@ namespace linker.tunnel
                 return null;
             }
 
+            using var budget = CancellationTokenSource.CreateLinkedTokenSource(token);
+            budget.CancelAfter(TimeSpan.FromSeconds(35));
+            token = budget.Token;
+            int generation = Volatile.Read(ref sessionGeneration);
+            pendingAttempts.TryAdd(budget, 0);
             try
             {
-                var query = (await tunnelMessengerAdapter.GetTunnelTransports(remoteMachineId).ConfigureAwait(false)).OrderBy(c => c.Order).Where(c => c.Disabled == false);
+                var query = (await tunnelMessengerAdapter.GetTunnelTransports(remoteMachineId).WaitAsync(token).ConfigureAwait(false)).OrderBy(c => c.Order).Where(c => c.Disabled == false);
                 if (tunnelTypes != null && tunnelTypes.Length > 0)
                 {
                     query = query.Where(c => tunnelTypes.Contains(c.TunnelType));
@@ -232,7 +260,7 @@ namespace linker.tunnel
                                     MachineId = remoteMachineId,
                                     ProtocolType = wanPortProtocol
                                 });
-                                await Task.WhenAll(localInfo, remoteInfo).ConfigureAwait(false);
+                                await Task.WhenAll(localInfo, remoteInfo).WaitAsync(token).ConfigureAwait(false);
 
                                 if (localInfo.Result == null)
                                 {
@@ -264,17 +292,21 @@ namespace linker.tunnel
                                     Remote = remoteInfo.Result,
                                     SSL = transportItem.SSL,
                                     FlowId = Interlocked.Increment(ref flowid),
-                                    Flag = flag
+                                    Flag = flag,
+                                    CancellationToken = token,
+                                    SessionGeneration = generation
                                 };
                                 OnConnecting(tunnelTransportInfo);
                                 ParseRemoteEndPoint(tunnelTransportInfo, transportItem.Addr);
-                                ITunnelConnection connection = await transport.ConnectAsync(tunnelTransportInfo).ConfigureAwait(false);
+                                ITunnelConnection connection = await AwaitConnection(transport.ConnectAsync(tunnelTransportInfo), token).ConfigureAwait(false);
                                 if (connection != null)
                                 {
+                                    if (token.IsCancellationRequested || generation != Volatile.Read(ref sessionGeneration)) { connection.Dispose(); return null; }
                                     OnConnected(connection, tunnelTransportInfo);
                                     return connection;
                                 }
                             }
+                            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
                             catch (Exception ex)
                             {
                                 if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
@@ -290,6 +322,10 @@ namespace linker.tunnel
                     }
                 }
             }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                linker.libs.diagnostics.VpnHealthJournal.Record(transactionId, remoteMachineId, "retrying", "connect_timeout", flag);
+            }
             catch (Exception ex)
             {
                 if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
@@ -299,6 +335,7 @@ namespace linker.tunnel
             }
             finally
             {
+                pendingAttempts.TryRemove(budget, out _);
                 operating.StopOperation(key);
             }
             return null;
@@ -307,45 +344,34 @@ namespace linker.tunnel
         /// 收到对方开始连接的消息
         /// </summary>
         /// <param name="tunnelTransportInfo"></param>
-        public async Task OnBegin(TunnelTransportInfo tunnelTransportInfo)
+        public async Task OnBegin(TunnelTransportInfo info)
         {
-            string key = BuildKey(tunnelTransportInfo.Remote.MachineId, tunnelTransportInfo.TransactionId, tunnelTransportInfo.Flag);
-            if (operating.StartOperation(key) == false)
-            {
-                return;
-            }
+            string key = BuildKey(info.Remote.MachineId, info.TransactionId, info.Flag);
+            if (!operating.StartOperation(key)) return;
+            using var budget = new CancellationTokenSource(TimeSpan.FromSeconds(35));
+            info.CancellationToken = budget.Token;
+            info.SessionGeneration = Volatile.Read(ref sessionGeneration);
+            pendingAttempts.TryAdd(budget, 0);
             try
             {
-                var _transports = await tunnelMessengerAdapter.GetTunnelTransports(tunnelTransportInfo.Remote.MachineId).ConfigureAwait(false);
-
-                ITunnelTransport transport = transports.FirstOrDefault(c => c.Name == tunnelTransportInfo.TransportName && c.ProtocolType == tunnelTransportInfo.TransportType);
-                TunnelTransportItemInfo item = _transports.FirstOrDefault(c => c.Name == tunnelTransportInfo.TransportName && c.Disabled == false);
-                if (transport != null && item != null)
-                {
-                    transport.SetSSL(tunnelMessengerAdapter.Certificate);
-                    OnConnectBegin(tunnelTransportInfo);
-                    ParseRemoteEndPoint(tunnelTransportInfo, item.Addr);
-                    _ = transport.OnBegin(tunnelTransportInfo).ContinueWith((result) =>
-                    {
-                        operating.StopOperation(key);
-                    });
-                }
-                else
-                {
-                    operating.StopOperation(key);
-                    _ = tunnelMessengerAdapter.SendConnectFail(tunnelTransportInfo);
-                }
+                var available = await tunnelMessengerAdapter.GetTunnelTransports(info.Remote.MachineId).WaitAsync(budget.Token).ConfigureAwait(false);
+                var transport = transports.FirstOrDefault(c => c.Name == info.TransportName && c.ProtocolType == info.TransportType);
+                var item = available.FirstOrDefault(c => c.Name == info.TransportName && !c.Disabled);
+                if (transport == null || item == null) { await tunnelMessengerAdapter.SendConnectFail(info).WaitAsync(budget.Token).ConfigureAwait(false); return; }
+                transport.SetSSL(tunnelMessengerAdapter.Certificate);
+                OnConnectBegin(info);
+                ParseRemoteEndPoint(info, item.Addr);
+                await transport.OnBegin(info).WaitAsync(budget.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                operating.StopOperation(key);
-                if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
-                {
-                    LoggerHelper.Instance.Error(ex);
-                }
+                LoggerHelper.Instance.Warning($"tunnel accept failed peer={info.Remote.MachineId}: {ex.GetType().Name}");
             }
-
-
+            finally
+            {
+                pendingAttempts.TryRemove(budget, out _);
+                operating.StopOperation(key);
+            }
         }
         /// <summary>
         /// 收到对方发来的连接失败的消息
@@ -425,9 +451,10 @@ namespace linker.tunnel
         {
             tunnelQuicTransfer.Transform(connection, info).ContinueWith((result) =>
             {
+                if (!result.IsCompletedSuccessfully) { _ = result.Exception; connection?.Dispose(); return; }
                 connection = result.Result;
-
                 if (connection == null) return;
+                if (info.CancellationToken.IsCancellationRequested || info.SessionGeneration != Volatile.Read(ref sessionGeneration)) { connection.Dispose(); return; }
                 if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
                     LoggerHelper.Instance.Debug($"tunnel connect {connection.RemoteMachineId}->{connection.RemoteMachineName} success->{connection.IPEndPoint}");
 
@@ -544,7 +571,7 @@ namespace linker.tunnel
         {
             if (AddBackground(remoteMachineId, transactionId, out CancellationTokenSource cts) == false)
             {
-                cts.Cancel();
+                cts.Dispose();
                 if (LoggerHelper.Instance.LoggerLevel <= LoggerTypes.DEBUG)
                     LoggerHelper.Instance.Error($"tunnel background {remoteMachineId}@{transactionId} already exists");
                 return;
@@ -555,7 +582,7 @@ namespace linker.tunnel
                 {
                     ITunnelConnection connection = null;
 
-                    await Task.Delay(delay).ConfigureAwait(false);
+                    await Task.Delay(delay, cts.Token).ConfigureAwait(false);
                     for (int i = 1; i <= times; i++)
                     {
                         if (stopCallback()) break;
@@ -565,7 +592,7 @@ namespace linker.tunnel
                         {
                             break;
                         }
-                        await Task.Delay(i * 3000).ConfigureAwait(false);
+                        await Task.Delay(i * 3000, cts.Token).ConfigureAwait(false);
                     }
 
                     await resultCallback(connection).ConfigureAwait(false);
@@ -575,7 +602,8 @@ namespace linker.tunnel
                 }
                 finally
                 {
-                    RemoveBackground(remoteMachineId, transactionId);
+                    backgroundDic.TryRemove(new KeyValuePair<string, CancellationTokenSource>(GetBackgroundKey(remoteMachineId, transactionId), cts));
+                    cts.Dispose();
                 }
             });
         }
@@ -588,7 +616,7 @@ namespace linker.tunnel
         {
             if (backgroundDic.TryRemove(GetBackgroundKey(remoteMachineId, transactionId), out CancellationTokenSource cts))
             {
-                cts.Cancel();
+                try { cts.Cancel(); } catch (ObjectDisposedException) { }
             }
         }
         public bool IsBackground(string remoteMachineId, string transactionId)

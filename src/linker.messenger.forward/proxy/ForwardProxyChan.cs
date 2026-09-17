@@ -1,4 +1,4 @@
-﻿using linker.tunnel;
+using linker.tunnel;
 using linker.tunnel.connection;
 using System.Collections.Concurrent;
 using System.Net;
@@ -106,6 +106,7 @@ namespace linker.messenger.forward.proxy
         /// <returns></returns>
         public Task Closed(ITunnelConnection connection, object userToken)
         {
+            RemoveConnection(connection);
             Version.Increment();
             return Task.CompletedTask;
         }

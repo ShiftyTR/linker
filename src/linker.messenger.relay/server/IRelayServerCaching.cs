@@ -38,7 +38,7 @@ namespace linker.messenger.relay.server
                 value = serializer.Deserialize<T>(bytes);
             else value = default;
 
-            return true;
+            return result;
         }
     }
 
