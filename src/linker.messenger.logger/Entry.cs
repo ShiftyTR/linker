@@ -3,6 +3,7 @@ using linker.libs.timer;
 using linker.libs.web;
 using linker.messenger.api;
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 namespace linker.messenger.logger
 {
     public static class Entry
@@ -14,7 +15,7 @@ namespace linker.messenger.logger
         }
         public static ServiceProvider UseLogger(this ServiceProvider serviceProvider)
         {
-            LoggerConsole();
+            LoggerDebug();
             return serviceProvider;
         }
 
@@ -41,7 +42,7 @@ namespace linker.messenger.logger
         }
 
 
-        private static void LoggerConsole()
+        private static void LoggerDebug()
         {
             if ((OperatingSystem.IsWindows() || OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()) == false) return;
 
@@ -51,27 +52,8 @@ namespace linker.messenger.logger
             }
             LoggerHelper.Instance.OnLogger += (model) =>
             {
-                ConsoleColor currentForeColor = Console.ForegroundColor;
-                switch (model.Type)
-                {
-                    case LoggerTypes.DEBUG:
-                        Console.ForegroundColor = ConsoleColor.Blue;
-                        break;
-                    case LoggerTypes.INFO:
-                        Console.ForegroundColor = ConsoleColor.White;
-                        break;
-                    case LoggerTypes.WARNING:
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        break;
-                    case LoggerTypes.ERROR:
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        break;
-                    default:
-                        break;
-                }
                 string line = $"[{model.Type,-7}][{model.Time:yyyy-MM-dd HH:mm:ss}]:{model.Content}";
-                Console.WriteLine(line);
-                Console.ForegroundColor = currentForeColor;
+                Debug.WriteLine(line);
                 try
                 {
                     using StreamWriter sw = File.AppendText(Path.Join(Helper.CurrentDirectory, "logs", $"{DateTime.Now:yyyy-MM-dd}.log"));

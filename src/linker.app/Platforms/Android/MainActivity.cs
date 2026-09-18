@@ -383,7 +383,7 @@ namespace linker.app
             catch (Exception ex)
             {
                 fd = 0;
-                System.Console.WriteLine($"vpn read {ex}");
+                System.Diagnostics.Debug.WriteLine($"vpn read {ex}");
             }
             return Helper.EmptyArray;
         }
@@ -405,7 +405,7 @@ namespace linker.app
             catch (Exception ex)
             {
                 fd = 0;
-                System.Console.WriteLine($"vpn write {ex}");
+                System.Diagnostics.Debug.WriteLine($"vpn write {ex}");
             }
             return false;
         }
