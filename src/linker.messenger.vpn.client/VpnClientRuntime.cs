@@ -59,6 +59,10 @@ public sealed class VpnClientRuntime : IDisposable
             ValidateOnBuild = true,
 #endif
         });
+        var routes = serviceProvider.GetRequiredService<linker.messenger.tuntap.cidr.TuntapCidrDecenterManager>();
+        serviceProvider.GetRequiredService<linker.messenger.firewall.hooks.TuntapFirewallHook>().ResolvePeer = ip =>
+            routes.FindValue(ip, out var peer, out _, out _) ? peer : null;
+        serviceProvider.GetRequiredService<FirewallTransfer>().Replace(options.FirewallRules, options.FirewallState);
         options.AfterBuild?.Invoke(this);
     }
 

@@ -219,7 +219,12 @@ namespace linker.messenger.entry
                     if ((modules & ExcludeModule.Tuntap) != ExcludeModule.Tuntap)
                         serviceProvider.UseTuntapClient(config);
                     if ((modules & ExcludeModule.Firewall) != ExcludeModule.Firewall)
+                    {
+                        var routes = serviceProvider.GetService<linker.messenger.tuntap.cidr.TuntapCidrDecenterManager>();
+                        serviceProvider.GetService<linker.messenger.firewall.hooks.TuntapFirewallHook>().ResolvePeer = ip =>
+                            routes.FindValue(ip, out var peer, out _, out _) ? peer : null;
                         serviceProvider.UseFirewallClient();
+                    }
                     if ((modules & ExcludeModule.Wakeup) != ExcludeModule.Wakeup)
                         serviceProvider.UseWakeupClient();
 

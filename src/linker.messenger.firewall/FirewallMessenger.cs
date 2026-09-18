@@ -129,6 +129,7 @@ namespace linker.messenger.firewall
         [MessengerId((ushort)FirewallMessengerIds.Get)]
         public void Get(IConnection connection)
         {
+            if (!firewallTransfer.AllowRemoteManagement) return;
             FirewallSearchInfo info = serializer.Deserialize<FirewallSearchInfo>(connection.ReceiveRequestWrap.Payload.Span);
             connection.Write(serializer.Serialize(firewallTransfer.Get(info)));
         }
@@ -139,6 +140,7 @@ namespace linker.messenger.firewall
         [MessengerId((ushort)FirewallMessengerIds.Add)]
         public void Add(IConnection connection)
         {
+            if (!firewallTransfer.AllowRemoteManagement) return;
             FirewallRuleInfo info = serializer.Deserialize<FirewallRuleInfo>(connection.ReceiveRequestWrap.Payload.Span);
             firewallTransfer.Add(info);
         }
@@ -149,6 +151,7 @@ namespace linker.messenger.firewall
         [MessengerId((ushort)FirewallMessengerIds.Remove)]
         public void Remove(IConnection connection)
         {
+            if (!firewallTransfer.AllowRemoteManagement) return;
             string id = serializer.Deserialize<string>(connection.ReceiveRequestWrap.Payload.Span);
             firewallTransfer.Remove(id);
         }
@@ -157,6 +160,7 @@ namespace linker.messenger.firewall
         [MessengerId((ushort)FirewallMessengerIds.State)]
         public void State(IConnection connection)
         {
+            if (!firewallTransfer.AllowRemoteManagement) return;
             LinkerFirewallState state = serializer.Deserialize<LinkerFirewallState>(connection.ReceiveRequestWrap.Payload.Span);
             firewallTransfer.State(state);
         }

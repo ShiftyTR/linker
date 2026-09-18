@@ -16,8 +16,19 @@ public sealed class VpnHealthReport
     public string InterfaceErrorCode { get; set; } = "";
     public string VirtualIp { get; set; } = "";
     public int TotalPeers { get; set; }
+    public VpnFirewallHealth Firewall { get; set; }
     public List<VpnPeerHealth> Peers { get; set; } = new();
     public List<VpnHealthEvent> Events { get; set; } = new();
+}
+
+public sealed class VpnFirewallHealth
+{
+    public string OsRuleState { get; set; } = "unknown";
+    public bool Enabled { get; set; }
+    public int ActiveRuleCount { get; set; }
+    public long BlockedPackets { get; set; }
+    public string LastBlockedPeerId { get; set; } = "";
+    public DateTimeOffset? LastBlockedAtUtc { get; set; }
 }
 
 public sealed class VpnPeerHealth

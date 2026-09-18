@@ -16,11 +16,13 @@ namespace linker.messenger.firewall
         }
         public Memory<byte> GetData()
         {
+            if (!firewallTransfer.AllowRemoteManagement) return serializer.Serialize(new List<FirewallRuleInfo>());
             return serializer.Serialize(firewallTransfer.Get().Where(c => c.Checked).ToList());
         }
 
         public void SetData(Memory<byte> data)
         {
+            if (!firewallTransfer.AllowRemoteManagement) return;
             List<string> ids = firewallTransfer.Get().Select(c => c.Id).ToList();
 
             List<FirewallRuleInfo> list = serializer.Deserialize<List<FirewallRuleInfo>>(data.Span);

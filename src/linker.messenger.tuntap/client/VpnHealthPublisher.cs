@@ -5,7 +5,7 @@ using linker.messenger.signin;
 namespace linker.messenger.tuntap.client;
 
 public sealed class VpnHealthPublisher(SignInClientState signIn, TuntapTransfer tun, TuntapConfigTransfer config,
-    TuntapProxy proxy, TuntapDecenter decenter, IMessengerSender sender) : IDisposable
+    TuntapProxy proxy, TuntapDecenter decenter, IMessengerSender sender, linker.nat.LinkerFirewall firewall = null) : IDisposable
 {
     private readonly CancellationTokenSource stop = new();
     private readonly VpnHealthSender delivery = new(sender);
@@ -19,6 +19,8 @@ public sealed class VpnHealthPublisher(SignInClientState signIn, TuntapTransfer 
     public VpnHealthReport Capture()
     {
         var report = VpnHealthJournal.Capture();
+        report.Firewall = firewall?.CaptureHealth();
+        if (report.Firewall != null) report.Firewall.OsRuleState = OperatingSystem.IsWindows() ? FireWallHelper.VpnRuleState : "not_applicable";
         report.InterfaceState = tun.Status.ToString().ToLowerInvariant();
         report.InterfaceErrorCode = string.IsNullOrWhiteSpace(tun.SetupError) ? "" : "interface_setup_failed";
         report.VirtualIp = config.Info.IP.ToString();

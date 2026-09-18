@@ -66,6 +66,7 @@ public sealed class VpnHealthCache
     private static bool Text(string value) => value != null && value.Length <= 128 && !value.Any(char.IsControl);
     public static bool Valid(VpnHealthReport r) => r != null && r.SchemaVersion == 1 && Guid.TryParse(r.SessionId, out _)
         && r.Sequence > 0 && Text(r.InterfaceState) && Text(r.InterfaceErrorCode) && Text(r.VirtualIp)
+        && (r.Firewall == null || (r.Firewall.ActiveRuleCount >= 0 && r.Firewall.BlockedPackets >= 0 && Text(r.Firewall.LastBlockedPeerId) && Text(r.Firewall.OsRuleState)))
         && r.Peers != null && r.Peers.Count <= 64 && r.Events != null && r.Events.Count <= 32
         && r.Peers.All(p => p != null && Text(p.PeerId) && Text(p.VirtualIp) && Text(p.State) && Text(p.ErrorCode)
             && Text(p.Stage) && Text(p.Transport) && Text(p.NodeId))
