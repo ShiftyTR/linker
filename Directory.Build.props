@@ -1,14 +1,22 @@
 <Project>
+  <PropertyGroup>
+    <!-- This must be known before selecting the output directories below, including when
+         Visual Studio evaluates the VPN client project without additional properties. -->
+    <LinkerVpnClientOnly Condition="'$(MSBuildProjectName)' == 'linker.messenger.vpn.client'">true</LinkerVpnClientOnly>
+  </PropertyGroup>
   <!--
     The MAUI host and the Packet Tunnel build different variants of the same Linker projects.
     Keeping both variants in the default bin/obj directories can pair a managed DLL from one
     variant with an iOS AOT module produced from the other variant (different assembly MVID).
   -->
   <PropertyGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
-    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\vpn\$(Configuration)\$(TargetFramework)\</IntermediateOutputPath>
-    <OutputPath>$(MSBuildProjectDirectory)\bin\vpn\$(Configuration)\$(TargetFramework)\</OutputPath>
-    <!-- ProjectReference path prediction can drop Configuration for property variants and look
-         under obj\vpn\net8.0\ref. Consume the actual isolated implementation DLL instead. -->
+    <!-- Directory.Build.props runs before the SDK supplies its default Configuration.
+         Use that same default here so CLI and IDE reference resolution agree. The SDK
+         appends TargetFramework (and RuntimeIdentifier) after this file is imported. -->
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)\obj\vpn\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)\bin\vpn\$(Configuration)\</OutputPath>
+    <!-- Consume the isolated implementation DLL when resolving the property variant. -->
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
   </PropertyGroup>
 </Project>

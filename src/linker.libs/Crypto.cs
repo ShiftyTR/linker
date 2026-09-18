@@ -46,8 +46,11 @@ namespace linker.libs
     }
     public sealed class AesCrypto : ISymmetricCrypto
     {
-        private ICryptoTransform encryptoTransform;
-        private ICryptoTransform decryptoTransform;
+        private readonly ICryptoTransform encryptoTransform;
+        private readonly ICryptoTransform decryptoTransform;
+        private readonly object encodeGate = new();
+        private readonly object decodeGate = new();
+        private bool disposed;
 
         public string Password { get; set; }
 
@@ -67,7 +70,13 @@ namespace linker.libs
         }
         public byte[] Encode(byte[] buffer, int offset, int length)
         {
-            return encryptoTransform.TransformFinalBlock(buffer, offset, length);
+            // Relay handshakes share this instance across peers. Native transforms are
+            // stateful: concurrent finalization/reset can invalidate Android JNI handles.
+            lock (encodeGate)
+            {
+                ObjectDisposedException.ThrowIf(disposed, this);
+                return encryptoTransform.TransformFinalBlock(buffer, offset, length);
+            }
         }
         public Memory<byte> Decode(byte[] buffer)
         {
@@ -75,13 +84,24 @@ namespace linker.libs
         }
         public Memory<byte> Decode(byte[] buffer, int offset, int length)
         {
-            return decryptoTransform.TransformFinalBlock(buffer, offset, length);
+            lock (decodeGate)
+            {
+                ObjectDisposedException.ThrowIf(disposed, this);
+                return decryptoTransform.TransformFinalBlock(buffer, offset, length);
+            }
         }
 
         public void Dispose()
         {
-            encryptoTransform.Dispose();
-            decryptoTransform.Dispose();
+            // Keep disposal out of either native operation; always take these locks in order.
+            lock (encodeGate)
+            lock (decodeGate)
+            {
+                if (disposed) return;
+                disposed = true;
+                try { encryptoTransform.Dispose(); }
+                finally { decryptoTransform.Dispose(); }
+            }
         }
         private static (byte[] Key, byte[] IV) GenerateKeyAndIV(string password)
         {
@@ -103,6 +123,9 @@ namespace linker.libs
     {
         private readonly AesGcm aesGcmEncode;
         private readonly AesGcm aesGcmDecode;
+        private readonly object encodeGate = new();
+        private readonly object decodeGate = new();
+        private bool disposed;
         private const int NonceSize = 12;
         private const int TagSize = 16;
         private const int KeySize = 16;
@@ -152,8 +175,9 @@ namespace linker.libs
             }
 
             Span<byte> nonce = stackalloc byte[NonceSize];
-            Environment.TickCount64.ToBytes(nonce);
-            Environment.TickCount.ToBytes(nonce.Slice(8));
+            // Multiple packets can be sent in the same millisecond. Clock-derived nonces
+            // repeat under load; keep the existing wire format with a fresh random nonce.
+            RandomNumberGenerator.Fill(nonce);
 
             Span<byte> nonceDest = destination.Slice(0, NonceSize);
             Span<byte> ciphertextDest = destination.Slice(NonceSize, plaintext.Length);
@@ -161,8 +185,9 @@ namespace linker.libs
 
             nonce.CopyTo(nonceDest);
 
-            //lock (this)
+            lock (encodeGate)
             {
+                ObjectDisposedException.ThrowIf(disposed, this);
                 aesGcmEncode.Encrypt(nonce, plaintext, ciphertextDest, tagDest, ReadOnlySpan<byte>.Empty);
             }
 
@@ -188,8 +213,9 @@ namespace linker.libs
             }
 
             Span<byte> plaintextDest = destination.Slice(0, ciphertext.Length);
-            //lock (this)
+            lock (decodeGate)
             {
+                ObjectDisposedException.ThrowIf(disposed, this);
                 try
                 {
                     aesGcmDecode.Decrypt(nonce, ciphertext, tag, plaintextDest, ReadOnlySpan<byte>.Empty);
@@ -216,8 +242,14 @@ namespace linker.libs
 
         public void Dispose()
         {
-            aesGcmEncode.Dispose();
-            aesGcmDecode.Dispose();
+            lock (encodeGate)
+            lock (decodeGate)
+            {
+                if (disposed) return;
+                disposed = true;
+                try { aesGcmEncode.Dispose(); }
+                finally { aesGcmDecode.Dispose(); }
+            }
         }
     }
 }
