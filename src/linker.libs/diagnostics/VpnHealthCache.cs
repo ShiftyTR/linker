@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 
 namespace linker.libs.diagnostics;
 
@@ -30,10 +31,23 @@ public sealed class VpnHealthCache
                 if (report.SessionId == previous.SessionId && report.Sequence <= previous.Sequence) return false;
             }
             else if (reports.Count >= 4096) return false;
+            // Older clients could misclassify discovery traffic as a missing peer.
+            // Filter only that specific error, preserving real unicast route failures.
+            int removed = report.Peers.RemoveAll(p => IsDiscoveryRouteError(p.PeerId, p.ErrorCode, p.Stage));
+            report.Events.RemoveAll(e => IsDiscoveryRouteError(e.PeerId, e.Code, e.Stage));
+            report.TotalPeers = Math.Max(report.Peers.Count, report.TotalPeers - removed);
             report.ReceivedAtUtc = receivedAt;
             reports[id] = report;
             return true;
         }
+    }
+
+    private static bool IsDiscoveryRouteError(string destination, string code, string stage)
+    {
+        if (code != "route_not_found" || stage != "routing" || !IPAddress.TryParse(destination, out var address)) return false;
+        byte[] bytes = address.GetAddressBytes();
+        return address.IsIPv6Multicast || (bytes.Length == 4 &&
+            ((bytes[0] & 0xf0) == 0xe0 || address.Equals(IPAddress.Broadcast)));
     }
 
     public VpnHealthReport Get(string id)

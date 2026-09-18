@@ -113,9 +113,12 @@ namespace linker.messenger.tuntap.client
         public async Task InputPacket(LinkerTunDevicPacket packet)
         {
             //IPV4广播组播、IPV6 多播
-            if ((packet.IPV4Broadcast || packet.IPV6Multicast) && tuntapConfigTransfer.Info.Multicast == false && Connections.IsEmpty == false)
+            if (packet.IPV4Broadcast || packet.IPV6Multicast)
             {
-                await Task.WhenAll(Connections.Values.Where(c => c != null && c.Connected).Select(c => c.SendAsync(packet.Buffer, packet.Offset, packet.Length))).ConfigureAwait(false);
+                // Discovery traffic has no single destination peer. Never enqueue it
+                // for unicast route discovery, including when no tunnels exist yet.
+                if (tuntapConfigTransfer.Info.Multicast == false)
+                    await Task.WhenAll(Connections.Values.Where(c => c != null && c.Connected).Select(c => c.SendAsync(packet.Buffer, packet.Offset, packet.Length))).ConfigureAwait(false);
                 return;
             }
 
@@ -165,6 +168,7 @@ namespace linker.messenger.tuntap.client
         /// <returns></returns>
         private async Task ConnectTunnel(uint ip)
         {
+            if ((ip & 0xf0000000) == 0xe0000000 || ip == uint.MaxValue) return;
             ITunnelConnection connection = null;
 
             if (tuntapCidrDecenterManager.FindValue(ip, out string machineId,out uint dst,out uint prefix))

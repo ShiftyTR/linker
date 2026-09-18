@@ -1,7 +1,6 @@
+using linker.libs;
 using linker.libs.diagnostics;
 using linker.messenger.signin;
-using linker.messenger.tuntap.messenger;
-using System.Text.Json;
 
 namespace linker.messenger.tuntap.client;
 
@@ -9,6 +8,8 @@ public sealed class VpnHealthPublisher(SignInClientState signIn, TuntapTransfer 
     TuntapProxy proxy, TuntapDecenter decenter, IMessengerSender sender) : IDisposable
 {
     private readonly CancellationTokenSource stop = new();
+    private readonly VpnHealthSender delivery = new(sender);
+    private string lastFailure = "";
     private int started;
     public void Start()
     {
@@ -45,7 +46,7 @@ public sealed class VpnHealthPublisher(SignInClientState signIn, TuntapTransfer 
             peer.ReceivedBytes = (long)entry.ReceiveBytes;
         }
         foreach (var peer in report.Peers)
-            if (decenter.Infos.TryGetValue(peer.PeerId, out var remote)) peer.VirtualIp = remote.IP.ToString();
+            if (decenter.Infos.TryGetValue(peer.PeerId, out var remote)) peer.VirtualIp = remote.IP?.ToString() ?? "";
         report.TotalPeers = Math.Max(report.TotalPeers, proxy.Connections.Count);
         return report;
     }
@@ -53,31 +54,32 @@ public sealed class VpnHealthPublisher(SignInClientState signIn, TuntapTransfer 
     private async Task Run()
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
-        Task<bool> inFlight = null;
         try
         {
             do
             {
-                if (!signIn.Connected || inFlight?.IsCompleted == false) continue;
-                if (inFlight?.IsFaulted == true) _ = inFlight.Exception;
                 try
                 {
-                    var payload = JsonSerializer.SerializeToUtf8Bytes(Capture(), VpnHealthJsonContext.Default.VpnHealthReport);
-                    if (payload.Length <= VpnHealthCache.MaximumPayloadBytes)
+                    var connection = signIn.Connection;
+                    if (connection?.Connected != true)
                     {
-                        inFlight = sender.SendOnly(new MessageRequestWrap
-                        {
-                            Connection = signIn.Connection, MessengerId = (ushort)TuntapMessengerIds.HealthReport,
-                            Payload = payload, Timeout = 3000
-                        });
-                        // At most one outstanding send, even if a legacy socket ignores cancellation.
-                        await inFlight.WaitAsync(TimeSpan.FromSeconds(3), stop.Token).ConfigureAwait(false);
+                        WarnOnce("control_disconnected");
+                        continue;
                     }
+                    if (await delivery.SendAsync(connection, Capture(), stop.Token).ConfigureAwait(false)) lastFailure = "";
                 }
-                catch (Exception) { /* Diagnostics must never interrupt packet forwarding. */ }
+                catch (OperationCanceledException) when (stop.IsCancellationRequested) { break; }
+                catch (Exception ex) { WarnOnce($"capture_failed type={ex.GetType().Name}"); }
             } while (await timer.WaitForNextTickAsync(stop.Token).ConfigureAwait(false));
         }
         catch (OperationCanceledException) { }
+    }
+
+    private void WarnOnce(string failure)
+    {
+        if (lastFailure == failure) return;
+        lastFailure = failure;
+        LoggerHelper.Instance.Warning($"vpn health {failure}");
     }
 
     public void Dispose() { stop.Cancel(); }

@@ -99,6 +99,7 @@ namespace linker.messenger
                 return false;
             }
 
+            byte[] bytes = null;
             try
             {
                 if (msg.RequestId == 0)
@@ -108,18 +109,18 @@ namespace linker.messenger
                     msg.RequestId = id;
                 }
 
-                byte[] bytes = msg.ToArray(out int length);
+                bytes = msg.ToArray(out int length);
 
                 Add(msg.MessengerId, 0, bytes.Length);
 
                 bool res = await msg.Connection.SendAsync(bytes.AsMemory(0, length)).ConfigureAwait(false);
-                msg.Return(bytes);
                 return res;
             }
             catch (Exception ex)
             {
                 LoggerHelper.Instance.Error(ex);
             }
+            finally { if (bytes != null) msg.Return(bytes); }
             return false;
         }
 

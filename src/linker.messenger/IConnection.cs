@@ -257,12 +257,13 @@ namespace linker.messenger
 
         }
 
-        public override bool Connected => SourceSocket != null && lastTicks.Expired(15000) == false;
+        public override bool Connected => Volatile.Read(ref disposed) == 0 && SourceSocket != null && lastTicks.Expired(15000) == false;
 
 
         private IConnectionReceiveCallback callback;
-        private CancellationTokenSource cancellationTokenSource;
-        private CancellationTokenSource cancellationTokenSourceWrite;
+        private readonly CancellationTokenSource cancellationTokenSource = new();
+        private readonly CancellationTokenSource cancellationTokenSourceWrite = new();
+        private int disposed;
         private object userToken;
         private bool framing;
         private ReceiveDataBuffer bufferCache = new ReceiveDataBuffer();
@@ -275,13 +276,11 @@ namespace linker.messenger
 
         public override void BeginReceive(IConnectionReceiveCallback callback, object userToken, bool framing = true)
         {
-            if (this.callback != null) return;
+            if (this.callback != null || Volatile.Read(ref disposed) != 0) return;
 
             this.callback = callback;
             this.userToken = userToken;
             this.framing = framing;
-            cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSourceWrite = new CancellationTokenSource();
 
             _ = ProcessWrite();
             _ = ProcessHeart();
@@ -395,6 +394,7 @@ namespace linker.messenger
             {
                 while (cancellationTokenSource.IsCancellationRequested == false)
                 {
+                    if (lastTicks.Expired(15000)) { Dispose(4); break; }
                     if (lastTicks.DiffGreater(3000))
                     {
                         pingTicks.Update();
@@ -418,18 +418,9 @@ namespace linker.messenger
             data.Length.ToBytes(heartData.AsSpan());
             data.AsMemory().CopyTo(heartData.AsMemory(4));
 
-            await semaphoreSlim.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (SourceStream != null)
-                {
-                    await SourceStream.WriteAsync(heartData.AsMemory(0, length), cancellationTokenSource.Token).ConfigureAwait(false);
-                }
-                else
-                {
-                    await SourceSocket.SendAsync(heartData.AsMemory(0, length), cancellationTokenSource.Token).ConfigureAwait(false);
-                }
-
+                if (!await SendAsync(heartData.AsMemory(0, length)).ConfigureAwait(false)) pong = true;
             }
             catch (Exception)
             {
@@ -437,10 +428,8 @@ namespace linker.messenger
             }
             finally
             {
-                semaphoreSlim.Release();
+                ArrayPool<byte>.Shared.Return(heartData);
             }
-
-            ArrayPool<byte>.Shared.Return(heartData);
         }
         public async Task SendPing()
         {
@@ -451,19 +440,33 @@ namespace linker.messenger
         }
         public override async Task<bool> SendAsync(ReadOnlyMemory<byte> data)
         {
-            if (SourceStream != null) await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+            if (Volatile.Read(ref disposed) != 0) return false;
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokenSourceWrite.Token);
+            deadline.CancelAfter(TimeSpan.FromSeconds(10));
+            bool entered = false;
             try
             {
+                // Heartbeats and messages share the same framing on TLS and plain TCP.
+                await semaphoreSlim.WaitAsync(deadline.Token).ConfigureAwait(false);
+                entered = true;
                 if (SourceStream != null)
-                    await SourceStream.WriteAsync(data, cancellationTokenSourceWrite.Token).ConfigureAwait(false);
+                    await SourceStream.WriteAsync(data, deadline.Token).ConfigureAwait(false);
                 else
-                    await SourceSocket.SendAsync(data, cancellationTokenSourceWrite.Token).ConfigureAwait(false);
+                {
+                    var remaining = data;
+                    while (!remaining.IsEmpty)
+                    {
+                        int written = await SourceSocket.SendAsync(remaining, SocketFlags.None, deadline.Token).ConfigureAwait(false);
+                        if (written == 0) throw new IOException("Control connection closed during send.");
+                        remaining = remaining[written..];
+                    }
+                }
                 SendBytes += data.Length;
-                lastTicks.Update();
+                return true;
             }
             catch (OperationCanceledException)
             {
-
+                Dispose(3);
             }
             catch (Exception ex)
             {
@@ -475,9 +478,9 @@ namespace linker.messenger
             }
             finally
             {
-                if (SourceStream != null) semaphoreSlim.Release();
+                if (entered) semaphoreSlim.Release();
             }
-            return true;
+            return false;
         }
         public override async Task<bool> SendAsync(byte[] data, int length)
         {
@@ -486,6 +489,7 @@ namespace linker.messenger
 
         public override void Dispose(int value = 0)
         {
+            if (Interlocked.Exchange(ref disposed, 1) != 0) return;
             callback = null;
             userToken = null;
             cancellationTokenSource?.Cancel();
@@ -496,6 +500,7 @@ namespace linker.messenger
 
             try
             {
+                SourceStream?.Dispose();
                 SourceNetworkStream?.Close();
                 SourceNetworkStream?.Dispose();
                 TargetNetworkStream?.Close();
