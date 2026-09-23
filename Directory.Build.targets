@@ -1,4 +1,10 @@
 <Project>
+  <PropertyGroup Condition="'$(LinkerVpnClientOnly)' == 'true'">
+    <!-- The extension owns its private graph, even when its projects are unchecked
+         as standalone solution builds for Android/Windows. -->
+    <OnlyReferenceAndBuildProjectsEnabledInSolutionConfiguration>false</OnlyReferenceAndBuildProjectsEnabledInSolutionConfiguration>
+  </PropertyGroup>
+
   <!-- NuGet adds transitive ProjectReference items during the build, after project
        evaluation. They do not inherit AdditionalProperties from the direct edge.
        Keep those references on the same client-only variant as the VPN runtime. -->
@@ -6,10 +12,36 @@
           AfterTargets="IncludeTransitiveProjectReferences"
           Condition="'$(LinkerVpnClientOnly)' == 'true'">
     <ItemGroup>
+      <!-- Solution restore also visits the full host graph. Do not let its cached
+           transitive references reintroduce modules excluded by the VPN projects. -->
+      <ProjectReference Remove="@(ProjectReference)"
+                        Condition="'%(ProjectReference.Filename)' == 'linker.messenger.access' or
+                                   '%(ProjectReference.Filename)' == 'linker.messenger.api' or
+                                   '%(ProjectReference.Filename)' == 'linker.messenger.forward' or
+                                   '%(ProjectReference.Filename)' == 'linker.messenger.node' or
+                                   '%(ProjectReference.Filename)' == 'linker.messenger.socks5'" />
       <ProjectReference Update="@(ProjectReference)"
                         Condition="$([System.String]::Copy('%(ProjectReference.Filename)').StartsWith('linker.'))">
         <AdditionalProperties>%(ProjectReference.AdditionalProperties);LinkerVpnClientOnly=true</AdditionalProperties>
       </ProjectReference>
     </ItemGroup>
+  </Target>
+
+  <!-- VS builds the normal solution variants and ResolveProjectReferences only
+       asks for output paths. Build the isolated VPN variants explicitly so a
+       clean IDE build does not depend on DLLs left by an earlier CLI build. -->
+  <Target Name="BuildLinkerVpnReferencesInVisualStudio"
+          BeforeTargets="ResolveProjectReferences"
+          DependsOnTargets="PrepareProjectReferences"
+          Condition="'$(LinkerVpnClientOnly)' == 'true' and '$(BuildingInsideVisualStudio)' == 'true' and '$(DesignTimeBuild)' != 'true' and '$(BuildingProject)' == 'true'">
+    <ItemGroup>
+      <_LinkerVpnReferencesToBuild Include="@(_MSBuildProjectReferenceExistent)"
+                                   Condition="$([System.String]::Copy('%(_MSBuildProjectReferenceExistent.Filename)').StartsWith('linker.'))" />
+    </ItemGroup>
+    <MSBuild Projects="@(_LinkerVpnReferencesToBuild)"
+             Targets="Build"
+             BuildInParallel="$(BuildInParallel)"
+             Properties="%(_LinkerVpnReferencesToBuild.SetConfiguration);%(_LinkerVpnReferencesToBuild.SetPlatform);%(_LinkerVpnReferencesToBuild.SetTargetFramework);BuildingInsideVisualStudio=false;BuildProjectReferences=true"
+             RemoveProperties="%(_LinkerVpnReferencesToBuild.GlobalPropertiesToRemove)$(_GlobalPropertiesToRemoveFromProjectReferences)" />
   </Target>
 </Project>
