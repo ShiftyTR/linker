@@ -21,7 +21,7 @@ namespace linker.tunnel
             this.transportUdpPortMap = transportUdpPortMap;
             this.transportTcpPortMap = transportTcpPortMap;
 
-            PortMappingUtility.StartDiscovery();
+            if (!OperatingSystem.IsIOS()) PortMappingUtility.StartDiscovery();
         }
 
         /// <summary>

@@ -51,7 +51,9 @@ namespace linker.messenger.tunnel.client
 
             Refresh();
 
-            PortMappingUtility.StartDiscovery();
+            // A packet-tunnel extension cannot request local-network consent, and
+            // router discovery loads a separate HTTP/XML stack into its small budget.
+            if (!OperatingSystem.IsIOS()) PortMappingUtility.StartDiscovery();
             PortMappingUtility.OnChange += () =>
             {
                 counterDecenter.SetValue("upnp-d", PortMappingUtility.DeviceCount);
@@ -117,6 +119,9 @@ namespace linker.messenger.tunnel.client
         }
         private async Task GetNet()
         {
+            // ISP, geolocation and NAT classification are display metadata only.
+            // Keep the iOS provider focused on peer discovery and actual transports.
+            if (OperatingSystem.IsIOS()) return;
             if (operatingManager.StartOperation("get_net") == false)
             {
                 return;
@@ -231,6 +236,9 @@ namespace linker.messenger.tunnel.client
         private async Task<int> GetIsp(CancellationToken token, int flag)
         {
             if (flag > 0) return 0;
+            // This optional HTTP-only metadata endpoint is blocked by iOS ATS. Leave
+            // ISP unknown; do not repeatedly retry it inside a Network Extension.
+            if (OperatingSystem.IsIOS()) return 1;
             try
             {
                 using HttpClient httpClient = new HttpClient();

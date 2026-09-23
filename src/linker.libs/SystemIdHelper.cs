@@ -7,14 +7,28 @@ namespace linker.libs
 {
     public static class SystemIdHelper
     {
+        private static readonly Lazy<string> iosSystemId = new(CreateIosSystemId);
+
         public static string GetSystemId()
         {
             if (OperatingSystem.IsWindows()) return GetSystemIdWindows();
             if (OperatingSystem.IsLinux()) return GetSystemIdLinux();
             if (OperatingSystem.IsAndroid()) return GetSystemIdAndroid();
             if (OperatingSystem.IsMacOS()) return GetSystemIdOSX();
+            if (OperatingSystem.IsIOS()) return iosSystemId.Value;
 
             return string.Empty;
+        }
+
+        private static string CreateIosSystemId()
+        {
+            // iOS cannot execute the desktop hardware-id commands. Keep an installation
+            // identity in its writable sandbox; do not change it when the OS is updated.
+            string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Helper.GlobalString);
+            Directory.CreateDirectory(directory);
+            string path = Path.Combine(directory, "machine-id.txt");
+            if (!File.Exists(path)) File.WriteAllText(path, Guid.NewGuid().ToString("N"));
+            return $"{File.ReadAllText(path).Trim()}↓ios";
         }
 
         private static string GetSystemIdAndroid()

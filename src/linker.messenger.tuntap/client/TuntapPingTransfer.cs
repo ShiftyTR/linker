@@ -55,6 +55,17 @@ namespace linker.messenger.tuntap.client
         private async Task Ping()
         {
             var items = tuntapDecenter.Infos.Values.Where(c => c.IP != null && c.IP.Equals(IPAddress.Any) == false && (c.Status & TuntapStatus.Running) == TuntapStatus.Running).ToList();
+            if (OperatingSystem.IsIOS())
+            {
+                // Provider-originated sockets bypass its own packet tunnel. An ICMP
+                // probe here would hit the physical network and falsely report loss.
+                // Existing transport heartbeats measure the actual peer connection.
+                foreach (var item in items)
+                    item.Delay = item.MachineId == signInClientStore.Id ? 0 :
+                        tuntapProxy.Connections.TryGetValue(item.MachineId, out var peer) && peer.Connected ? peer.Delay : -1;
+                tuntapDecenter.DataVersion.Increment();
+                return;
+            }
             if ((tuntapConfigTransfer.Info.Switch & TuntapSwitch.AutoConnect) != TuntapSwitch.AutoConnect)
             {
                 var connections = tuntapProxy.Connections;

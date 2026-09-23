@@ -59,6 +59,7 @@ namespace linker.messenger.serializer.memorypack
         }
     }
 
+#if !LINKER_VPN_CLIENT_ONLY
     [MemoryPackable]
     public readonly partial struct SerializableRelayCacheInfo
     {
@@ -147,6 +148,7 @@ namespace linker.messenger.serializer.memorypack
         }
     }
 
+#endif
     [MemoryPackable]
     public readonly partial struct SerializableRelayMessageInfo
     {
@@ -465,6 +467,7 @@ namespace linker.messenger.serializer.memorypack
     }
 
 
+#if !LINKER_VPN_CLIENT_ONLY
     [MemoryPackable]
     public readonly partial struct SerializableRelayServerNodeReportInfoOld
     {
@@ -593,4 +596,5 @@ namespace linker.messenger.serializer.memorypack
                 value.Version = reader.ReadValue<string>();
         }
     }
+#endif
 }

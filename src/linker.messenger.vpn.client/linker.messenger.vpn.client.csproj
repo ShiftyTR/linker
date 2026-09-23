@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LinkerVpnClientOnly>true</LinkerVpnClientOnly>
+    <DefineConstants>$(DefineConstants);LINKER_VPN_CLIENT_ONLY</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,10 +25,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="..\linker.messenger.store.file\cert.pfx" LogicalName="linker.messenger.vpn.client.cert.pfx" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="..\linker.messenger.serializer.memorypack\MemoryPackSerializer.cs" Link="Serialization\MemoryPackSerializer.cs" />
     <Compile Include="..\linker.messenger.serializer.memorypack\IPAddressFormatter.cs" Link="Serialization\IPAddressFormatter.cs" />
     <Compile Include="..\linker.messenger.serializer.memorypack\IPEndPointFormatter.cs" Link="Serialization\IPEndPointFormatter.cs" />
     <Compile Include="..\linker.messenger.serializer.memorypack\ConnectionFormatter.cs" Link="Serialization\ConnectionFormatter.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\SignInSerializer.cs" Link="Serialization\SignInSerializer.cs" />
+    <Compile Include="..\linker.messenger.serializer.memorypack\RelaySerializer.cs" Link="Serialization\RelaySerializer.cs" />
     <Compile Include="..\linker.messenger.serializer.memorypack\TunnelConnectionFormatter.cs" Link="Serialization\TunnelConnectionFormatter.cs" />
     <Compile Include="..\linker.messenger.serializer.memorypack\DecenterSerializer.cs" Link="Serialization\DecenterSerializer.cs" />
     <Compile Include="..\linker.messenger.serializer.memorypack\SyncSerializer.cs" Link="Serialization\SyncSerializer.cs" />

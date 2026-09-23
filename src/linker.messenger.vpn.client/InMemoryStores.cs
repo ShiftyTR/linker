@@ -42,7 +42,14 @@ internal sealed class InMemoryMessengerStore : IMessengerStore, IDisposable
         }
         else
         {
-            certificate = new X509Certificate2();
+            // Match the full client without importing its persistence/server dependency graph.
+            // An empty certificate fails TLS on Apple platforms, even as a client credential.
+            using var stream = typeof(InMemoryMessengerStore).Assembly.GetManifestResourceStream("linker.messenger.vpn.client.cert.pfx")
+                ?? throw new InvalidOperationException("The VPN transport certificate is missing.");
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            var flags = OperatingSystem.IsIOS() ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.Exportable;
+            certificate = new X509Certificate2(buffer.ToArray(), "123456", flags);
         }
     }
 
@@ -104,7 +111,12 @@ internal sealed class InMemoryTunnelClientStore : ITunnelClientStore
     public Task<bool> SetRouteLevelPlus(int level) { RouteLevelPlus = level; OnChanged(); return Task.FromResult(true); }
     public Task<bool> SetPortMap(int privatePort, int publicPort) { PortMapPrivate = privatePort; PortMapPublic = publicPort; OnChanged(); return Task.FromResult(true); }
     public Task<List<string>> GetTunnelTransportMachineIds() => Task.FromResult(transports.Keys.ToList());
-    public Task<List<TunnelTransportItemInfo>> GetTunnelTransports(string machineId) => Task.FromResult(transports.TryGetValue(machineId, out var value) ? value : []);
+    public Task<List<TunnelTransportItemInfo>> GetTunnelTransports(string machineId)
+    {
+        if (transports.TryGetValue(machineId, out var value) && value.Count > 0) return Task.FromResult(value);
+        // Match the persisted client store: a new peer inherits the default transports.
+        return Task.FromResult(transports.TryGetValue(linker.libs.Helper.GlobalString, out value) ? value : []);
+    }
     public Task<bool> SetTunnelTransports(string machineId, List<TunnelTransportItemInfo> value) { transports[machineId] = value; OnChanged(); return Task.FromResult(true); }
     public Task<bool> SetTunnelTransports(string machineId, List<ITunnelTransport> value) => SetTunnelTransports(machineId, value.Select(x => new TunnelTransportItemInfo { Name = x.Name, Label = x.Label, ProtocolType = x.ProtocolType.ToString(), Reverse = x.Reverse, DisableReverse = x.DisableReverse, SSL = x.SSL, DisableSSL = x.DisableSSL, Order = x.Order, TunnelType = x.TunnelType }).ToList());
     public Task<bool> SetNetwork(TunnelPublicNetworkInfo value) { Network = value; OnChanged(); return Task.FromResult(true); }

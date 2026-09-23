@@ -1,4 +1,5 @@
 using MemoryPack;
+using MemoryPack.Formatters;
 using Microsoft.Extensions.DependencyInjection;
 using linker.messenger.serializer.memorypack;
 
@@ -10,10 +11,43 @@ internal static class VpnClientSerialization
     {
         services.AddSingleton<linker.libs.ISerializer, PlusMemoryPackSerializer>();
 
+        // These wire envelopes have no generated formatter. Register concrete generic
+        // instances so full trimming/AOT never has to construct them through reflection.
+        MemoryPackFormatterProvider.Register(new KeyValuePairFormatter<string, string>());
+        MemoryPackFormatterProvider.Register(new KeyValuePairFormatter<string, bool>());
+        MemoryPackFormatterProvider.Register(new KeyValuePairFormatter<string, Guid>());
+        MemoryPackFormatterProvider.Register(new KeyValuePairFormatter<string, linker.tunnel.connection.TunnelProtocolType>());
+        MemoryPackFormatterProvider.Register(new KeyValuePairFormatter<string, linker.upnp.PortMappingInfo>());
+        MemoryPackFormatterProvider.Register(new KeyValuePairFormatter<int, System.Net.Sockets.ProtocolType>());
+        MemoryPackFormatterProvider.Register(new KeyValuePairFormatter<string, KeyValuePair<int, System.Net.Sockets.ProtocolType>>());
+        MemoryPackFormatterProvider.Register(new ValueTupleFormatter<string, string>());
+        MemoryPackFormatterProvider.Register(new ValueTupleFormatter<string, string, int>());
+        MemoryPackFormatterProvider.Register(new ValueTupleFormatter<string, string, uint>());
+        MemoryPackFormatterProvider.Register(new ListFormatter<(string, string, int)>());
+        MemoryPackFormatterProvider.Register(new MemoryFormatter<byte>());
+        MemoryPackFormatterProvider.Register(new ReadOnlyMemoryFormatter<byte>());
+        MemoryPackFormatterProvider.Register(new ListFormatter<ReadOnlyMemory<byte>>());
+
         MemoryPackFormatterProvider.Register(new IPEndPointFormatter());
         MemoryPackFormatterProvider.Register(new IPAddressFormatter());
         MemoryPackFormatterProvider.Register(new TunnelConnectionFormatter());
         MemoryPackFormatterProvider.Register(new ConnectionFormatter());
+        MemoryPackFormatterProvider.Register(new SignInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignCacheInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInListRequestInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInListResponseInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInIdsRequestInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInIdsResponseInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInIdsResponseItemInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInResponseInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInConfigSetNameInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInNamesResponseItemInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInUserIdsResponseItemInfoFormatter());
+        MemoryPackFormatterProvider.Register(new SignInPushArgInfoFormatter());
+        MemoryPackFormatterProvider.Register(new RelayAskResultInfoFormatter());
+        MemoryPackFormatterProvider.Register(new RelayMessageInfoFormatter());
+        MemoryPackFormatterProvider.Register(new RelayServerNodeReportInfoFormatter());
+        MemoryPackFormatterProvider.Register(new RelayServerNodeStoreInfoFormatter());
         MemoryPackFormatterProvider.Register(new SyncInfoFormatter());
         MemoryPackFormatterProvider.Register(new TunnelTransportWanPortInfoFormatter());
         MemoryPackFormatterProvider.Register(new TunnelTransportItemInfoFormatter());

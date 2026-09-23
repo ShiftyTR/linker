@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics.CodeAnalysis;
 using linker.messenger.channel;
 using linker.messenger.decenter;
 using linker.messenger.exroute;
@@ -72,6 +73,16 @@ public sealed class VpnClientRuntime : IDisposable
         return serviceProvider.GetRequiredService<T>();
     }
 
+    // MessengerResolver dispatches these public handlers by their MessengerId attributes.
+    // Keep just the client entry points when the iOS provider is fully trimmed.
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(SignInClientMessenger))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(DecenterClientMessenger))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(SyncClientMessenger))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(TunnelClientMessenger))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(linker.messenger.relay.messenger.RelayClientMessenger))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(PcpClientMessenger))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(linker.messenger.tuntap.messenger.TuntapClientMessenger))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(FirewallClientMessenger))]
     public Task StartAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref disposed) != 0, this);
@@ -83,8 +94,9 @@ public sealed class VpnClientRuntime : IDisposable
             .UseExRoute()
             .UseDecenterClient()
             .UseSyncClient()
-            .UseTunnelClient()
             .UseRelayClient()
+            // UseTunnelClient snapshots the transports; register relay before that snapshot.
+            .UseTunnelClient()
             .UsePcpClient()
             .UseTuntapClient()
             .UseFirewallClient()

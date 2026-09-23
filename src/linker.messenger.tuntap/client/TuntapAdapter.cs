@@ -86,7 +86,8 @@ namespace linker.messenger.tuntap.client
             SetMssfix();
             AddForward();
 
-            FireWallHelper.WriteVpn(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName, tuntapConfigTransfer.Info.IP, tuntapConfigTransfer.Info.Name);
+            if (OperatingSystem.IsWindows())
+                FireWallHelper.WriteVpn(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName, tuntapConfigTransfer.Info.IP, tuntapConfigTransfer.Info.Name);
         }
         private void ShutdownBefore()
         {
